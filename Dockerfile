@@ -4,6 +4,7 @@ WORKDIR /app
 
 RUN apk add --no-cache musl-dev
 RUN rustup target add x86_64-unknown-linux-musl
+RUN rustup component add rustfmt
 
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src

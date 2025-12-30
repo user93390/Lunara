@@ -1,45 +1,41 @@
 mod database;
+mod api;
 
-use database::Database;
+use std::env;
 use std::error::Error;
-use uuid::Uuid;
+use axum::Router;
+use dotenv::dotenv;
+use tokio::net::TcpListener;
+use crate::api::route;
+use crate::database::Database;
 
-/*
-db.insert(
-    "accounts",
-    &["uid", "username", "password"],
-    params!(uid, username, password)
-).await?;
- */
-
-/*
-  let row = db.select_one(
-       "accounts",
-       &["uid", "username", "password"],
-       "uid = $1",
-       params!(uid)
-   ).await?;
-*/
-
-/*
-    let new_password = "new_hashed_password_789";
-    let rows_affected = db
-        .update(
-            "accounts",
-            &["password"],
-            params!(new_password),
-            "uid = $1",
-            params!(uid),
-        )
-        .await?;
- */
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let db_host = "nah";
-    let db_port = "no";
-    let db_name = "nope";
-    let db_user = "hell nah";
-    let db_password = "ea";
+    let database = database().await;
+    let api_route = route::api_users(database);
+    
+    let app = Router::new()
+        .nest("/api", api_route.await);
+    
+    let listener = TcpListener::bind("127.0.0.1:3000")
+        .await?;
+
+    println!("listening on {}", listener.local_addr()?);
+    axum::serve(listener, app).await?;
+    
+    println!("Closing server");
+
+    Ok(())
+}
+
+async fn database() -> Database {
+    dotenv().ok();
+    
+    let db_host = env::var("HOST").expect("Bad env type");
+    let db_port = env::var("PORT").expect("Bad env type");
+    let db_name = env::var("NAME").expect("Bad env type");
+    let db_user = env::var("USER").expect("Bad env type");
+    let db_password = env::var("PASSWORD").expect("Bad env type");
 
     let connection_string = match db_password {
         pwd if !pwd.is_empty() => format!(
@@ -52,19 +48,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         ),
     };
 
-    let db = Database::connect(&connection_string).await?;
-    
-    // Read
-    let rows = db
-        .select("accounts", &["uid", "username"], None, &[])
-        .await?;
-
-    println!("✓ All accounts:");
-    for row in rows {
-        let uid: Uuid = row.get(0);
-        let username: String = row.get(1);
-        println!("  - {} ({})", username, uid);
-    }
-
-    Ok(())
+    Database::connect(&connection_string)
+        .await
+        .unwrap()
 }
