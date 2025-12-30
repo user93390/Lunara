@@ -1,4 +1,5 @@
 #### Good-To-Knows
+
 IDE: RustRover by JetBrains
 Language: Rust
 Framework: Axum
@@ -6,6 +7,7 @@ Operating System (OS): Ubuntu 24.0
 Architecture: x86_64
 
 # Prompting
+
 Nothing fancy, minimal text is required.
 
 If you must add text, make it clear and concise.
@@ -26,7 +28,7 @@ The smaller, the better. If an error (or bug) can be fixed easily, use that meth
 
 When anybody asks you to fix anything, run the codebase first to get errors, debug output, or traces.
 
-After you run the code, find clues in the output, then carefully change the code. 
+After you run the code, find clues in the output, then carefully change the code.
 Run the codebase after small changes and if something breaks, just simply revert it and find a new way of doing things
 
 # Thinking Before Executing

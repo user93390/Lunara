@@ -1,12 +1,10 @@
 {
   "name": "Rust",
   "image": "rust",
-
-  "customizations" : {
-    "jetbrains" : {
-      "backend" : "RustRover",
-      
-      "plugins" : [
+  "customizations": {
+    "jetbrains": {
+      "backend": "RustRover",
+      "plugins": [
         "com.github.copilot"
       ],
     }
