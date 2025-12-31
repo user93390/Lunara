@@ -1,0 +1,12 @@
+hard_tabs = false
+tab_spaces = 4
+max_width = 120
+use_small_heuristics = "Default"
+newline_style = "Auto"
+brace_style = "SameLineWhere"
+group_imports = "StdExternalCrate"
+imports_granularity = "Crate"
+fn_args_density = "Wide"
+fn_call_width = 90
+merge_derives = false
+format_strings = true
