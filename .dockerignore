@@ -3,5 +3,5 @@ README.md
 Dockerfile
 .gitignore
 Justfile
-compose.yaml
+docker-compose.yaml
 .env

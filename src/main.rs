@@ -50,35 +50,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Load environment variables.
     info!("Loading environment variables");
 
-    *DB_PASSWORD.lock().await = env::var("PASSWORD").expect("PASSWORD env var not set");
-    *DB_HOST.lock().await = env::var("HOST").expect("HOST env var not set");
-    *DB_PORT.lock().await = env::var("PORT").expect("PORT env var not set");
-    *DB_NAME.lock().await = env::var("NAME").expect("NAME env var not set");
-    *DB_USER.lock().await = env::var("USER").expect("USER env var not set");
+    *DB_PASSWORD.lock().await = env::var("PASSWORD")?;
+    *DB_HOST.lock().await = env::var("HOST")?;
+    *DB_PORT.lock().await = env::var("PORT")?;
+    *DB_NAME.lock().await = env::var("NAME")?;
+    *DB_USER.lock().await = env::var("USER")?;
 
     info!("Done loading variables!");
+    
+    let database = database::database().await;
 
-    let skip_db = env::var("SKIP_DB").unwrap_or_default() == "true";
+    info!("Configuring routes");
+    
+    let api_route = api_route::user_api(database).await;
+    let auth_route = auth_route::auth_api().await;
 
-    let app = if skip_db {
-        info!("Skipping database initialization (SKIP_DB=true)");
-        Router::new()
-            .route("/", get(|| async { "Lunara is running! (No database)" }))
-            .route("/health", get(|| async { "OK" }))
-    } else {
-        info!("Initializing database.");
-        let database = database::database().await;
-
-        info!("Configuring routes");
-        let api_route = api_route::user_api(database);
-        let auth_route = auth_route::auth_api();
-
-        Router::new()
-            .nest("/api", api_route.await)
-            .nest("/auth/v1", auth_route.await)
-            .route("/", get(|| async { "Lunara is running!" }))
-            .route("/health", get(|| async { "OK" }))
-    };
+    let app = Router::new()
+        .nest("/api", api_route)
+        .nest("/auth/v1", auth_route)
+        .route("/", get(|| async { "Lunara is running!" }));
 
     let string_addr = format!("{}:{}", SERVER_ADDR, SERVER_PORT);
 

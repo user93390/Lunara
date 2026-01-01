@@ -18,4 +18,4 @@ docker-init:
   docker build -t lunara .
 
 docker-compose:
-  docker-compose -f compose up
+  docker compose up -d
