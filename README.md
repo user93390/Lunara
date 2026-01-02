@@ -1,4 +1,7 @@
+![image](https://github.com/user93390/Lunara/blob/master/Lunara.svg)
+
 # Overview
+
 
 <p> Lunara is aimed to make local Minecraft server hosting easier, faster, and simpler.</p>
 
