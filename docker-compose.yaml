@@ -1,35 +1,24 @@
 services:
-  postgres:
-    image: postgres:alpine
+  postgres_database:
+    image: postgres:alpine3.20
     environment:
-      POSTGRES_DB: ${NAME}
-      POSTGRES_USER: ${USER}
-      POSTGRES_PASSWORD: ${PASSWORD}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
     ports:
       - "5433:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_dat:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${USER} -d ${NAME}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
-  app:
+  application:
     image: lunara
     build: .
+    restart: on-failure
     ports:
       - "5000:5000"
-    environment:
-      HOST: postgres
-      PORT: ${PORT}
-      NAME: ${NAME}
-      USER: ${USER}
-      PASSWORD: ${PASSWORD}
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres_database
 
 volumes:
-  postgres_data:
+  postgres_dat:

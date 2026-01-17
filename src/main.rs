@@ -13,28 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 extern crate log;
 mod account;
 mod api;
 mod database;
 mod routes;
 
-use crate::database::{DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER};
-use crate::routes::{api_route, auth_route};
+use crate::{
+    database::Database,
+    routes::{api_route, auth_route},
+};
 use axum::Router;
-use dotenv::dotenv;
 use log::{info, LevelFilter};
-use std::env;
 use std::error::Error;
-use axum::routing::get;
+use std::rc::Rc;
 use tokio::net::TcpListener;
-
+use tower_http::services::ServeDir;
 
 const SERVER_ADDR: &str = "0.0.0.0";
 const SERVER_PORT: u16 = 5000;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     color_eyre::install()?;
 
     env_logger::builder()
@@ -45,37 +46,32 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     info!("Running Lunara.");
 
-    dotenv().ok();
-
-    // Load environment variables.
-    info!("Loading environment variables");
-
-    *DB_PASSWORD.lock().await = env::var("PASSWORD")?;
-    *DB_HOST.lock().await = env::var("HOST")?;
-    *DB_PORT.lock().await = env::var("PORT")?;
-    *DB_NAME.lock().await = env::var("NAME")?;
-    *DB_USER.lock().await = env::var("USER")?;
-
-    info!("Done loading variables!");
-    
-    let database = database::database().await;
-
     info!("Configuring routes");
-    
-    let api_route = api_route::user_api(database).await;
-    let auth_route = auth_route::auth_api().await;
 
-    let app = Router::new()
-        .nest("/api", api_route)
+    let database_rc = Rc::new(database().await?);
+
+    let auth_route: Router<_> = auth_route::auth_api((*database_rc).clone()).await;
+    let api_route: Router<_> = api_route::user_api((*database_rc).clone()).await;
+
+    let flutter_dir = ServeDir::new("flutter/build/web");
+
+    let app: Router<_> = Router::new()
         .nest("/auth/v1", auth_route)
-        .route("/", get(|| async { "Lunara is running!" }));
+        .nest("/api", api_route)
+        .fallback_service(flutter_dir);
 
     let string_addr = format!("{}:{}", SERVER_ADDR, SERVER_PORT);
 
-    info!("Done! Now serving {}", string_addr);
+    let alt_addr = format!("localhost:{}", SERVER_PORT);
+
+    info!("Done! Now serving {} \n Alternatively: {}", string_addr, alt_addr);
 
     let listener = TcpListener::bind(string_addr).await?;
-    
+
     axum::serve(listener, app).await?;
     Ok(())
+}
+
+async fn database() -> Result<Database, Box<dyn Error + Send + Sync>> {
+    Ok(database::database().await?)
 }

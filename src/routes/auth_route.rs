@@ -16,19 +16,30 @@
 
 use crate::api::auth::login::try_login;
 use crate::api::auth::signup::create_account;
+use crate::database::Database;
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::routing::get;
 use axum::Router;
 use log::info;
 
-pub(crate) async fn auth_api() -> Router {
+pub(crate) async fn auth_api(db: Database) -> Router {
     Router::new()
-        .route("/signup/{uuid}/{username}/{password}/", get(create_account))
-        .route("/login/{username}/{password}/", get(login))
+        .route("/signup/:uuid/:username/:password", get(signup_handler))
+        .route("/login/:username/:password", get(login_handler))
+        .with_state(db)
 }
 
-async fn login(Path((username, password)): Path<(String, String)>) -> Result<StatusCode, StatusCode> { 
+async fn signup_handler(
+    Path((uuid, username, password)): Path<(String, String, String)>,
+) -> Result<StatusCode, StatusCode> {
+    create_account(Path((uuid.parse().map_err(|_| StatusCode::BAD_REQUEST)?, username, password)))
+        .await
+}
+
+async fn login_handler(
+    Path((username, password)): Path<(String, String)>,
+) -> Result<StatusCode, StatusCode> {
     let uuid = try_login(Path((username, password)))
         .await
         .ok_or(StatusCode::BAD_REQUEST)?;

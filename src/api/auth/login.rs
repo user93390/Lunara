@@ -20,14 +20,13 @@ use log::warn;
 use uuid::Uuid;
 
 pub(crate) async fn try_login(Path((username, password)): Path<(String, String)>) -> Option<Uuid> {
-    let db = database().await;
+    let db = database().await.ok()?;
 
-    let uuid_row = db
+    let rows = db
         .select("accounts", &["uid"], Some("username = $1"), &[&username])
         .await
-        .map_err(|_| false);
+        .ok()?;
 
-    let rows = uuid_row.unwrap();
     let row = match rows.first() {
         Some(r) => r,
         None => {
@@ -41,10 +40,9 @@ pub(crate) async fn try_login(Path((username, password)): Path<(String, String)>
     let password_row = db
         .select_one("accounts", &["password"], "uid = $1", &[&uuid])
         .await
-        .map_err(|_| false);
+        .ok()?;
 
     let valid = password_row
-        .expect("Bad password query")
         .get::<usize, String>(0)
         .eq(&password);
 

@@ -1,13 +1,25 @@
 {
   "name": "Rust",
-  "image": "rust",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "dev",
   "customizations": {
     "jetbrains": {
       "backend": "RustRover",
       "plugins": [
         "com.github.copilot"
-      ],
+      ]
+    },
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "Dart-Code.dart-code",
+        "Dart-Code.flutter",
+        "fill-labs.dependi",
+        "skellock.just",
+        "tamasfe.even-better-toml"
+      ]
     }
-  },
-  "remoteUser": "Lunara-developer"
+  }
 }

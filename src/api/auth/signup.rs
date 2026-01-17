@@ -18,18 +18,22 @@ use crate::account::account::Account;
 use crate::database::database;
 use crate::params;
 use axum::extract::Path;
+use axum::http::StatusCode;
 use uuid::Uuid;
 
-pub(crate) async fn create_account(Path((uuid, username, password)): Path<(Uuid, String, String)>) {
+pub(crate) async fn create_account(Path((uuid, username, password)): Path<(Uuid, String, String)>) -> Result<StatusCode, StatusCode> {
     let account = Account::new(uuid, username, password);
 
     database()
         .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .insert(
             "accounts",
             &["uid", "username", "password"],
             params!(account.id(), account.username(), account.password()),
         )
         .await
-        .expect("Params issue. idk just fix it");
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(StatusCode::CREATED)
 }

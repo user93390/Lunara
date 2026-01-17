@@ -1,3 +1,19 @@
+/*
+ * Copyright 2025 seasnail1
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import 'package:flutter/material.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -97,7 +113,7 @@ class MainBody extends StatefulWidget {
 class _MainBodyState extends State<MainBody> {
   final List<String> _lines = [];
 
-  void _addLine(String line) {
+  void addLine(String line) {
     setState(() => _lines.add(line));
   }
 
@@ -156,7 +172,7 @@ class _MainBodyState extends State<MainBody> {
                         ),
                       ),
                       SizedBox(height: UIConfig.gapLarge),
-                      TerminalInput(onSubmitted: _addLine),
+                      TerminalInput(onSubmitted: addLine),
                     ],
                   ),
                   const SizedBox(width: UIConfig.gapLarge),
@@ -183,7 +199,7 @@ class _MainBodyState extends State<MainBody> {
                   ElevatedButton(
                     onPressed: () async => {},
                     child: FancyText(
-                      text: 'Version $version',
+                      text: 'Lunara $version',
                       icon: Icon(FeatherIcons.info),
                       fontWeight: FontWeight.bold,
                     ),
@@ -253,7 +269,7 @@ class TerminalInput extends StatelessWidget {
     return SizedBox(
       width: UIConfig.terminalInputWidth,
       child: TextField(
-        style: const TextStyle(color: Colors.white, fontFamily: 'Courier New'),
+        style: TextStyle(color: textColor, fontFamily: 'Courier New'),
         decoration: InputDecoration(
           filled: true,
           fillColor: fillColor,
@@ -335,86 +351,84 @@ class Graph extends StatelessWidget {
         ? Colours.graphGradientTwoDark
         : Colours.graphGradientTwoLight;
 
-    return Container(
-      child: Column(
-        children: [
-          title,
-          const SizedBox(height: 10),
-          SizedBox(
-            width: width,
-            height: height,
+    return Column(
+      children: [
+        title,
+        const SizedBox(height: 10),
+        SizedBox(
+          width: width,
+          height: height,
 
-            child: LineChart(
-              LineChartData(
-                lineTouchData: LineTouchData(
-                  handleBuiltInTouches: true,
-                  touchTooltipData: LineTouchTooltipData(
-                    tooltipBorder: BorderSide(
-                      color: borderColor,
-                      width: UIConfig.borderThickness,
-                    ),
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                ),
-
-                gridData: FlGridData(
-                  show: true,
-                  drawHorizontalLine: false,
-                  drawVerticalLine: true,
-                ),
-
-                // change grid colour
-                borderData: FlBorderData(
-                  show: true,
-                  border: Border.all(
+          child: LineChart(
+            LineChartData(
+              lineTouchData: LineTouchData(
+                handleBuiltInTouches: true,
+                touchTooltipData: LineTouchTooltipData(
+                  tooltipBorder: BorderSide(
                     color: borderColor,
                     width: UIConfig.borderThickness,
                   ),
                 ),
+              ),
+              titlesData: FlTitlesData(
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                rightTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                topTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+              ),
 
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: const [
-                      FlSpot(0, 1),
-                      FlSpot(1, 3),
-                      FlSpot(2, 2),
-                      FlSpot(3, 5),
-                      FlSpot(4, 3),
-                      FlSpot(5, 4),
-                      FlSpot(6, 7),
-                    ],
-                    dotData: FlDotData(show: false),
-                    isCurved: true,
-                    barWidth: 3,
-                    color: lineColor,
-                    belowBarData: BarAreaData(
-                      show: true,
-                      gradient: LinearGradient(
-                        colors: [gradientTop, gradientBottom],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
+              gridData: FlGridData(
+                show: true,
+                drawHorizontalLine: false,
+                drawVerticalLine: true,
+              ),
+
+              // change grid colour
+              borderData: FlBorderData(
+                show: true,
+                border: Border.all(
+                  color: borderColor,
+                  width: UIConfig.borderThickness,
+                ),
+              ),
+
+              lineBarsData: [
+                LineChartBarData(
+                  spots: const [
+                    FlSpot(0, 1),
+                    FlSpot(1, 3),
+                    FlSpot(2, 2),
+                    FlSpot(3, 5),
+                    FlSpot(4, 3),
+                    FlSpot(5, 4),
+                    FlSpot(6, 7),
+                  ],
+                  dotData: FlDotData(show: false),
+                  isCurved: true,
+                  barWidth: 3,
+                  color: lineColor,
+                  belowBarData: BarAreaData(
+                    show: true,
+                    gradient: LinearGradient(
+                      colors: [gradientTop, gradientBottom],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
