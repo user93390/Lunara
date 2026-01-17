@@ -5,8 +5,8 @@ WORKDIR /app
 RUN apk add --no-cache musl-dev bash curl git libstdc++ libgcc
 
 # ARM systems. Optional but recommended.
-RUN rustup target add aarch64-unknown-linux-gnu \ 
-    aarch64-apple-darwin \ 
+RUN rustup target add aarch64-unknown-linux-gnu \
+    aarch64-apple-darwin \
     aarch64-pc-windows-msvc
 
 COPY Cargo.toml ./
@@ -22,7 +22,17 @@ FROM alpine:latest AS flutter_builder
 
 WORKDIR /flutter_app
 
-RUN apk add --no-cache bash curl git unzip xz
+RUN apk add --no-cache \
+    bash \
+    ca-certificates \
+    curl \
+    git \
+    unzip \
+    xz \
+    libc6-compat \
+    gcompat \
+    libstdc++ \
+    libgcc
 
 RUN git clone https://github.com/flutter/flutter.git /flutter
 ENV PATH="/flutter/bin:${PATH}"
