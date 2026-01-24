@@ -14,41 +14,30 @@
  * limitations under the License.
  */
 
-use crate::database;
 use crate::database::Database;
-use axum::extract::Path;
+use crate::entity::accounts::{Column, Entity};
+use axum::extract::{Path, State};
 use log::warn;
-use tokio_postgres::Row;
+use sea_orm::EntityTrait;
+use sea_orm::{ColumnTrait, QueryFilter};
+use std::sync::Arc;
 use uuid::Uuid;
 
-pub(crate) async fn try_login(Path((username, password)): Path<(String, String)>) -> Option<Uuid> {
-	let db: Database = database().await.ok()?;
+pub(crate) async fn try_login(
+	State(db): State<Arc<Database>>,
+	Path((username, password)): Path<(String, String)>,
+) -> Option<Uuid> {
 
-	let rows: Vec<Row> = db
-		.select("accounts", &["uid"], Some("username = $1"), &[&username])
+	let account = Entity::find()
+		.filter(Column::Username.eq(&username))
+		.one(db.conn())
 		.await
-		.ok()?;
+		.ok()??;
 
-	let row = match rows.first() {
-		Some(r) => r,
-		None => {
-			warn!("Cannot find uuid inside row.");
-			return None;
-		}
-	};
-
-	let uuid: Uuid = row.get(0);
-
-	let password_row: Row = db
-		.select_one("accounts", &["password"], "uid = $1", &[&uuid])
-		.await
-		.ok()?;
-
-	let valid: bool = password_row.get::<usize, String>(0).eq(&password);
-
-	if !valid {
+	if account.password != password {
+		warn!("Invalid password for user: {}", username);
 		return None;
 	}
 
-	Some(uuid)
+	Some(account.uid)
 }

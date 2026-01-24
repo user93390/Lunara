@@ -16,7 +16,6 @@ impl KeyringService {
 			service_name: service_name.into(),
 		}
 	}
-
 	pub async fn set_secret(
 		&self, key: &str, secret: &str,
 	) -> Result<(), Box<dyn Error + Send + Sync>> {
@@ -24,17 +23,12 @@ impl KeyringService {
 		let key: String = key.to_string();
 		let secret: String = secret.to_string();
 
-		spawn_blocking(move || match Entry::new(&service_name, &key) {
-			Ok(entry) => {
-				if let Err(e) = entry.set_password(&secret) {
-					error!("Failed to set keyring secret value: {:?}", e);
-				}
-			}
-			Err(e) => {
-				panic!("Failed to create keyring entry: {:?}", e);
-			}
+		spawn_blocking(move || {
+			let entry = Entry::new(&service_name, &key)?;
+			entry.set_password(&secret)?;
+			Ok::<(), keyring::Error>(())
 		})
-		.await?;
+		.await??;
 
 		Ok(())
 	}
@@ -73,10 +67,15 @@ impl KeyringService {
 	}
 
 	pub async fn secret_exists(&self, key: &str) -> bool {
-		match self.get_secret(key).await {
-			Ok(s) => s != "N/A",
+		let service_name: String = self.service_name.clone();
+		let key: String = key.to_string();
+
+		spawn_blocking(move || match Entry::new(&service_name, &key) {
+			Ok(entry) => entry.get_password().is_ok(),
 			Err(_) => false,
-		}
+		})
+		.await
+		.unwrap_or(false)
 	}
 
 	pub fn generate_key_128() -> [u8; 32] {

@@ -1,13 +1,9 @@
 {
-  "name": "Rust",
-  "build": {
-    "dockerfile": "Dockerfile"
-  },
-  "remoteUser": "dev",
-  "runArgs": [
-    "--init",
-    "--privileged"
-  ],
+  "name": "Lunara dev environment",
+  "remoteUser": "lunara-developer",
+  "service": "dev-machine",
+  "workspaceFolder": "/home/lunara-developer/",
+  "dockerComposeFile": "compose-dev.yml",
   "customizations": {
     "jetbrains": {
       "backend": "RustRover",

@@ -15,10 +15,12 @@
  */
 
 use crate::database::Database;
+use crate::entity::accounts::{Column, Entity};
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::routing::get;
 use axum::{Json, Router};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -37,16 +39,13 @@ async fn users(
 ) -> Result<Json<HashMap<Uuid, String>>, (StatusCode, String)> {
 	let mut users: HashMap<Uuid, String> = HashMap::new();
 
-	let rows: Vec<tokio_postgres::Row> = db
-		.select("accounts", &["uid", "username"], None, &[])
+	let accounts = Entity::find()
+		.all(db.conn())
 		.await
 		.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-	for row in rows {
-		let uid: Uuid = row.get(0);
-		let username: String = row.get(1);
-
-		users.insert(uid, username);
+	for account in accounts {
+		users.insert(account.uid, account.username);
 	}
 
 	Ok(Json(users))
@@ -58,18 +57,14 @@ async fn search_user(
 ) -> Result<Json<HashMap<Uuid, String>>, (StatusCode, String)> {
 	let mut users: HashMap<Uuid, String> = HashMap::new();
 
-	let rows: Vec<tokio_postgres::Row> = db
-		.select("accounts", &["uid", "username"], Some("uid = $1"), &[&uuid])
+	let account = Entity::find()
+		.filter(Column::Uid.eq(uuid))
+		.one(db.conn())
 		.await
-		.map_err(|e: tokio_postgres::Error| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+		.map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-	for row in rows {
-		let uid: Uuid = row.get(0);
-		let username: String = row.get(1);
-
-		if uuid == uid {
-			users.insert(uid, username);
-		}
+	if let Some(account) = account {
+		users.insert(account.uid, account.username);
 	}
 
 	Ok(Json(users))

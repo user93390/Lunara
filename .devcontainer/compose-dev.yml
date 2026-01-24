@@ -1,0 +1,10 @@
+name: lunara-dev-container
+
+services:
+  dev-machine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/home/lunara-dev/project
+    command: ["sleep", "infinity"]

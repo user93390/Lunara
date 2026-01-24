@@ -1,13 +1,13 @@
 #!/usr/bin/env just --justfile
 
 # Cargo helper functions
-build:
+build: clean
   cargo build --release
 
 check:
   cargo check --release
 
-clean:
+clean: dock_stop
   cargo clean --release
 
 # Docker helper functions

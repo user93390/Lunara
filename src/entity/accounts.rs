@@ -12,34 +12,21 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+*/
 
+use sea_orm::entity::prelude::*;
 use uuid::Uuid;
 
-pub(crate) struct Account {
-	pub(crate) id: Uuid,
-	pub(crate) username: String,
-	pub(crate) password: String,
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
+#[sea_orm(table_name = "accounts")]
+pub struct Model {
+	#[sea_orm(primary_key, auto_increment = false)]
+	pub uid: Uuid,
+	#[sea_orm(unique)]
+	pub username: String,
+	pub password: String,
 }
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+pub enum Relation {}
 
-impl Account {
-	pub fn new(id: Uuid, username: String, password: String) -> Self {
-		Self {
-			id,
-			username,
-			password,
-		}
-	}
-
-	pub fn id(&self) -> Uuid {
-		self.id
-	}
-
-	pub fn username(&self) -> &str {
-		&self.username
-	}
-
-	pub fn password(&self) -> &str {
-		&self.password
-	}
-}
+impl ActiveModelBehavior for ActiveModel {}

@@ -15,10 +15,11 @@
  */
 
 pub mod db;
-
 pub use db::Database;
 use std::error::Error;
 
 pub async fn database(conn_string: &str) -> Result<Database, Box<dyn Error + Send + Sync>> {
-	Ok(Database::connect(conn_string).await?)
+	Ok(
+		Database::connect(conn_string).await?
+	)
 }

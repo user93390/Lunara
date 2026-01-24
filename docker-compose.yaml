@@ -10,6 +10,7 @@ services:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql:Z
       - postgres_dat:/var/lib/postgresql/data
 
+
   application:
     image: lunara
     build: .

@@ -14,26 +14,27 @@
  * limitations under the License.
  */
 
-use crate::account::account::Account;
-use crate::database;
-use crate::params;
-use axum::extract::Path;
+use crate::database::Database;
+use crate::entity::accounts::ActiveModel;
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
+use sea_orm::{ActiveModelTrait, Set};
+use std::sync::Arc;
 use uuid::Uuid;
 
 pub(crate) async fn create_account(
+	State(db): State<Arc<Database>>,
 	Path((uuid, username, password)): Path<(Uuid, String, String)>,
 ) -> Result<StatusCode, StatusCode> {
-	let account = Account::new(uuid, username, password);
 
-	database()
-		.await
-		.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-		.insert(
-			"accounts",
-			&["uid", "username", "password"],
-			params!(account.id(), account.username(), account.password()),
-		)
+	let new_account = ActiveModel {
+		uid: Set(uuid),
+		username: Set(username),
+		password: Set(password),
+	};
+
+	new_account
+		.insert(db.conn())
 		.await
 		.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
