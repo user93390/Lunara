@@ -5,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    user: "1000:1000"
     volumes:
-      - ..:/home/lunara-dev/project
-    command: ["sleep", "infinity"]
+      - ..:/home/lunara-developer/lunara
+    command: [ "sleep", "infinity" ]
