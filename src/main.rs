@@ -20,27 +20,49 @@ mod config;
 mod database;
 mod entity;
 mod keyring;
+mod minecraft;
 mod route;
 
-use crate::{
-	database::Database,
-	route::{api_route, auth_route},
+use axum::{
+	routing::get,
+	Router,
 };
 use std::collections::HashMap;
 
-use crate::config::Config;
-use crate::keyring::KeyringService;
+use crate::{
+	config::Config,
+	database::Database,
+	keyring::keyring_service::KeyringService,
+	route::{
+		api_route,
+		auth_route,
+	},
+};
 
-use axum::Router;
+use log::{
+	error,
+	info,
+	warn,
+	LevelFilter,
+};
 
-use axum::routing::get;
-use log::{error, info, warn, LevelFilter};
-use std::convert::TryInto;
-use std::error::Error;
-use std::path::Path;
-use std::sync::Arc;
-use tokio::fs::File;
-use tokio::net::TcpListener;
+use crate::{
+	minecraft::server::{
+		QuickOptions,
+		Server,
+	},
+	route::servers::server_api,
+};
+use std::{
+	convert::TryInto,
+	error::Error,
+	path::Path,
+	sync::Arc,
+};
+use tokio::{
+	fs::File,
+	net::TcpListener,
+};
 
 const SERVER_ADDR: &str = "0.0.0.0";
 const SERVER_PORT: u16 = 5000;
@@ -71,11 +93,13 @@ impl App {
 
 		let auth_route: Router<_> = auth_route::auth_api((*db).clone()).await;
 		let api_route: Router<_> = api_route::user_api((*db).clone()).await;
+		let server_api: Router<_> = server_api().await;
 
 		Ok(Router::new()
 			.route("/", get("Lunara is working!"))
 			.nest("/auth/v1", auth_route)
-			.nest("/api", api_route))
+			.nest("/api", api_route)
+			.nest("/api", server_api))
 	}
 
 	pub async fn init_kering(
@@ -119,8 +143,6 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 		.format_timestamp_secs()
 		.format_level(true)
 		.filter_level(LevelFilter::Info)
-		.filter(Some("zbus"), LevelFilter::Warn)
-		.filter(Some("tracing"), LevelFilter::Warn)
 		.init();
 
 	info!("Running Lunara.");
@@ -141,6 +163,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
 		config.with_key(new_key);
 	}
+
 	App::init_kering(&keyring_service).await?;
 
 	let key = keyring_service.get_secret("key").await?;
@@ -156,9 +179,8 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 		user, password, host, port, name
 	);
 
-	let vec = hex::decode(key)?;
-
-	let arr = conv_vec_arr(vec);
+	let vec: Vec<u8> = hex::decode(key)?;
+	let arr: [u8; 32] = conv_vec_arr(vec);
 
 	config
 		.with_key(arr)
@@ -187,8 +209,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 	Ok(())
 }
 
-fn conv_vec_arr<T, const N: usize>(v: Vec<T>) -> [T; N] {
+fn conv_vec_arr<T, const V: usize>(v: Vec<T>) -> [T; V] {
 	v.try_into()
-		.unwrap_or_else(|v: Vec<T>| panic!("Expected a Vec of length {} but it was {}", N, v.len()))
+		.unwrap_or_else(|_| panic!("Expected a Vec of length {}", V))
 }
-

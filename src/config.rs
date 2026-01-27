@@ -1,12 +1,22 @@
-use std::error::Error;
-use std::str::from_utf8;
+use std::{
+	error::Error,
+	str::from_utf8,
+};
 
 use log::warn;
-use serde::{Deserialize, Serialize};
+use serde::{
+	Deserialize,
+	Serialize,
+};
 use std::path::Path;
 
-use tokio::fs::File;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::{
+	fs::File,
+	io::{
+		AsyncReadExt,
+		AsyncWriteExt,
+	},
+};
 
 #[derive(Deserialize, Serialize, Clone)]
 pub(crate) struct Config {
@@ -98,7 +108,7 @@ impl Config {
 		let toml = toml::to_string(self)?;
 
 		let mut file = File::create(path).await?;
-		file.write_all(toml.as_bytes()).await?;
+		file.write_buf(&mut toml.as_bytes()).await?;
 
 		Ok(true)
 	}
