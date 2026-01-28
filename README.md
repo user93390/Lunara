@@ -11,7 +11,7 @@
 
 # Ways Of Supporting
 
-<p> There's no shame in opening and issue or PR on my github repo. Don't be scared to do so!</p>
+<p> There's no shame in opening and issue or PR on my GitHub repo. Don't be scared to do so!</p>
 
 <p> Make sure to follow the coding standards.</p>
 
@@ -26,18 +26,19 @@
 
 # Building.
 >  You must have
->  - Git
->  - cargo and rust
->  - Just
+>  - git
+>  - cargo 
+>  - rust
+>  - make
 >  - Configured ssh with git
 
 <p>Open your terminal of choice and enter</p>
 
 `git clone git@github.com:user93390/Lunara.git` \
 `cd Lunara` \
-`just build_all`
+`make build_all`
 
 # Docker configuration
-Build docker image using `just dock_init` \
-Run docker by using `just dock_compose` \
-Automate building and docker by using `just dock_auto`
+Build docker image using `make dock_init` \
+Run docker by using `make dock_compose` \
+Automate building and docker by using `make dock_auto`
