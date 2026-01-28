@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 seasnail1
+ * Copyright 2026 seasnail1
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,4 @@
  * limitations under the License.
  */
 
-pub(crate) mod api_route;
-pub(crate) mod auth_route;
-
-pub(crate) mod servers;
+pub(crate) mod server;

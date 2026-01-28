@@ -14,14 +14,25 @@
  * limitations under the License.
  */
 
-use crate::database::Database;
-use crate::entity::accounts::ActiveModel;
-use axum::extract::{Path, State};
-use axum::http::StatusCode;
-use sea_orm::{ActiveModelTrait, Set};
+use crate::{
+	database::Database,
+	entity::accounts::ActiveModel,
+};
+use axum::{
+	extract::{
+		Path,
+		State,
+	},
+	http::StatusCode,
+};
+use sea_orm::{
+	ActiveModelTrait,
+	Set,
+};
 use std::sync::Arc;
 use uuid::Uuid;
 
+#[axum::debug_handler]
 pub(crate) async fn create_account(
 	State(db): State<Arc<Database>>, Path((uuid, username, password)): Path<(Uuid, String, String)>,
 ) -> Result<StatusCode, StatusCode> {
