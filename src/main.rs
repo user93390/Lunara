@@ -23,11 +23,9 @@ mod keyring;
 mod minecraft;
 mod route;
 
-use axum::{
-	routing::get,
-	Router,
-};
+use axum::Router;
 use std::collections::HashMap;
+use tower_http::services::{ServeDir, ServeFile};
 
 use crate::{
 	config::Config,
@@ -46,23 +44,19 @@ use log::{
 	LevelFilter,
 };
 
-use crate::{
-	minecraft::server::{
-		QuickOptions,
-		Server,
-	},
-	route::servers::server_api,
-};
+use crate::route::servers::server_api;
 use std::{
 	convert::TryInto,
 	error::Error,
 	path::Path,
 	sync::Arc,
 };
+use axum::routing::get;
 use tokio::{
 	fs::File,
 	net::TcpListener,
 };
+use tracing_subscriber::EnvFilter;
 
 const SERVER_ADDR: &str = "0.0.0.0";
 const SERVER_PORT: u16 = 5000;
@@ -95,11 +89,17 @@ impl App {
 		let api_route: Router<_> = api_route::user_api((*db).clone()).await;
 		let server_api: Router<_> = server_api().await;
 
+		let serve_dir = ServeDir::new("static")
+			.append_index_html_on_directories(true)
+			.not_found_service(ServeFile::new("static/index.html"));
+
 		Ok(Router::new()
-			.route("/", get("Lunara is working!"))
+			.route("/health", get("Healthy!"))
 			.nest("/auth/v1", auth_route)
 			.nest("/api", api_route)
-			.nest("/api", server_api))
+			.nest("/api", server_api)
+			.fallback_service(serve_dir)
+		)
 	}
 
 	pub async fn init_kering(
