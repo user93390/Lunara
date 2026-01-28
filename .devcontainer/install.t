@@ -1,5 +1,5 @@
 my @packages = (
-    "just",
+    "make",
     "docker",
     "git",
     "rustup"

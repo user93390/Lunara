@@ -2,13 +2,15 @@ FROM rust:alpine AS builder
 
 WORKDIR /app
 
+ENV CI=true
+
 COPY init.sql /docker-entrypoint-initdb.d/init.sql
 
 RUN apk add --no-cache nodejs npm
 RUN npm install -g pnpm
 
 COPY web ./web
-RUN cd web && pnpm install --frozen-lockfile && pnpm run build
+RUN cd web && pnpm install && pnpm run build
 RUN mkdir -p static && cp -r web/dist/* static/
 
 COPY Cargo.toml ./
