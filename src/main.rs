@@ -179,7 +179,6 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
 	config
 		.with_key(arr)
-		.with_path(String::from("config.toml"))
 		.with_conn_str(connection_string.clone());
 
 	let app: App = App {

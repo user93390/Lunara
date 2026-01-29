@@ -18,16 +18,16 @@ use tokio::{
 	},
 };
 
+const CONF_LOCATION: &str = "config.toml";
+
 #[derive(Deserialize, Serialize, Clone)]
 pub(crate) struct Config {
-	config_path: String,
 	keyring_key: [u8; 32],
 	connection_string: String,
 }
 impl Config {
 	pub(crate) fn default() -> Self {
 		Self {
-			config_path: "config.toml".to_string(),
 			keyring_key: [0u8; 32],
 			connection_string: "NaN".to_string(),
 		}
@@ -35,7 +35,6 @@ impl Config {
 
 	pub(crate) fn build(self) -> Self {
 		Self {
-			config_path: self.config_path,
 			keyring_key: self.keyring_key,
 			connection_string: self.connection_string,
 		}
@@ -49,10 +48,6 @@ impl Config {
 		&self.connection_string
 	}
 
-	pub(crate) fn cfg_path(&self) -> &String {
-		&self.config_path
-	}
-
 	pub(crate) fn with_key(&mut self, key: [u8; 32]) -> &mut Self {
 		self.keyring_key = key;
 		self
@@ -63,15 +58,10 @@ impl Config {
 		self
 	}
 
-	pub(crate) fn with_path(&mut self, path: String) -> &mut Self {
-		self.config_path = path;
-		self
-	}
-
 	pub(crate) async fn get_from_toml(
 		&self,
 	) -> Result<Option<Config>, Box<dyn Error + Send + Sync>> {
-		let path: &Path = Path::new(&self.config_path);
+		let path: &Path = Path::new(CONF_LOCATION);
 
 		let mut file: File = File::open(path).await?;
 
@@ -83,8 +73,7 @@ impl Config {
 		if cont.is_empty() {
 			warn!("Config file has nothing inside it");
 
-			let mut cfg = Config::default();
-			cfg.with_path(String::from("config.toml"));
+			let cfg = Config::default();
 			return Ok(Some(cfg));
 		}
 
@@ -93,10 +82,10 @@ impl Config {
 	}
 
 	pub(crate) async fn write_toml(&self) -> Result<bool, Box<dyn Error + Send + Sync>> {
-		let path: &Path = Path::new(&self.config_path);
+		let path: &Path = Path::new(CONF_LOCATION);
 
 		if !path.exists() {
-			warn!("file doesn't exist: {}", self.config_path);
+			warn!("file doesn't exist: {}", CONF_LOCATION);
 			return Ok(false);
 		}
 
