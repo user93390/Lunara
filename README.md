@@ -20,7 +20,7 @@
 
 <p> There's no shame in opening and issue or PR on my GitHub repo. Don't be scared to do so!</p>
 <p> Make sure to follow the coding standards.</p>
-<p> Use your own fingers to type, don't give it to the AI./p>
+<p> Use your own fingers to type, don't give it to the AI</p>
 <p> Even if you just changed one line, it still makes a big difference.</p>
 
 # Goals
@@ -44,7 +44,7 @@
 `make build_all`
 
 # Docker configuration
-Build docker image using `make dock_init` \
+Build docker image using `make dock_init` 
 Run docker by using `make dock_compose` \
 
 Automake all the above by using `make dock_auto`

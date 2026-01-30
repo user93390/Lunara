@@ -39,7 +39,7 @@ sub install_optional {
     print("installing option dependencies... \n");
 
     system("cargo install ripgrep");
-    system("cargo install fd");
+    system("cargo install fd-find");
     system("cargo install bottom --locked");
 
     system("echo '[charm]
