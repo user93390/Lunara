@@ -11,10 +11,10 @@ RUN addgroup -g $GROUP_ID $GROUP_NAME
 RUN adduser --shell /bin/sh --disabled-password --uid $USER_ID --ingroup $GROUP_NAME $USER_NAME
 
 RUN mkdir -p $PROJECT_PATH
-COPY install.t $PROJECT_PATH/install.t
+COPY install.t $PROJECT_PATH/install.pm
 
 RUN apk add perl
 
 WORKDIR $PROJECT_PATH
 
-RUN perl install.t
+RUN perl install.pm

@@ -97,9 +97,7 @@ impl App {
 		)
 	}
 
-	pub async fn init_kering(
-		keyring_service: &KeyringService,
-	) -> Result<(), Box<dyn Error + Send + Sync>> {
+	pub async fn init_kering(keyring_service: &KeyringService) -> Result<(), Box<dyn Error + Send + Sync>> {
 		let secrets = [
 			("db.host", POSTGRES_HOST_DEF),
 			("db.port", POSTGRES_PORT_DEF),
@@ -110,8 +108,10 @@ impl App {
 
 		let hash: HashMap<&str, &str> = secrets.iter().cloned().collect();
 
-		for hashmap in hash {
-			keyring_service.set_secret(hashmap.0, hashmap.1).await?;
+		for (key, value) in hash {
+			if let Err(e) = keyring_service.set_secret(key, value).await {
+				error!("Failed to store secret '{}' in keyring: {}. Using default.", key, e);
+			}
 		}
 
 		Ok(())
@@ -120,7 +120,7 @@ impl App {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
-	let config_path = Path::new("config.toml");
+	let config_path : &Path= Path::new("config.toml");
 
 	if !config_path.exists() {
 		File::create_new("config.toml").await?;
@@ -152,12 +152,20 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 		// gen new 128 key
 		let new_key: [u8; 32] = KeyringService::generate_key_128();
 
-		keyring_service
+		info!("Generating new key.");
+
+		let keyring_service_result = keyring_service
 			.set_secret("key", &hex::encode(new_key))
-			.await?;
+			.await;
+
+		if keyring_service_result.is_err() {
+			error!("Error in keyring service.")
+		}
 
 		config.with_key(new_key);
 	}
+
+	info!("Init keyring secrets...");
 
 	App::init_kering(&keyring_service).await?;
 
@@ -168,6 +176,8 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 	let name = keyring_service.get_secret("db.name").await?;
 	let user = keyring_service.get_secret("db.user").await?;
 	let password = keyring_service.get_secret("db.password").await?;
+
+	info!("Creating connection...");
 
 	let connection_string = format!(
 		"postgres://{}:{}@{}:{}/{}",
