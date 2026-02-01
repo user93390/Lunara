@@ -13,29 +13,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+use crate::api::auth::Authentication;
+use crate::api::auth::signup::SignupAuth;
 use crate::database::Database;
 use crate::entity::accounts::{Column, Entity};
-use axum::extract::{Path, State};
-use log::warn;
+use axum::http::StatusCode;
+use sea_orm::ColumnTrait;
 use sea_orm::EntityTrait;
-use sea_orm::{ColumnTrait, QueryFilter};
+use sea_orm::QueryFilter;
+use std::error::Error;
 use std::sync::Arc;
 use uuid::Uuid;
 
-pub(crate) async fn try_login(
-	State(db): State<Arc<Database>>, Path((username, password)): Path<(String, String)>,
-) -> Option<Uuid> {
-	let account = Entity::find()
-		.filter(Column::Username.eq(&username))
-		.one(db.conn())
-		.await
-		.ok()??;
+pub struct LoginAuth {
+	pub(crate) uuid: Uuid,
+	pub(crate) password: Vec<u8>,
+	pub(crate) db: Arc<Database>,
+}
 
-	if account.password != password {
-		warn!("Invalid password for user: {}", username);
-		return None;
+impl Authentication for LoginAuth {
+	async fn await_login(
+		&self, auth: LoginAuth,
+	) -> Result<StatusCode, Box<dyn Error + Sync + Send>> {
+		let auth_pw_str = &String::from_utf8(auth.password)?;
+
+		let account = Entity::find()
+			.filter(Column::Uid.eq(auth.uuid))
+			.one(self.db.conn())
+			.await?
+			.unwrap();
+
+		if account.password.eq(auth_pw_str) {
+			return Ok(StatusCode::OK);
+		}
+
+		Ok(StatusCode::UNAUTHORIZED)
 	}
 
-	Some(account.uid)
+	async fn await_signup(
+		&self, _auth: SignupAuth,
+	) -> Result<StatusCode, Box<dyn Error + Sync + Send>> {
+		Ok(StatusCode::NOT_IMPLEMENTED)
+	}
 }

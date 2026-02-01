@@ -1,21 +1,12 @@
-use std::{
-	error::Error,
-	str::from_utf8,
-};
+use std::{error::Error, str::from_utf8};
 
 use log::warn;
-use serde::{
-	Deserialize,
-	Serialize,
-};
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 use tokio::{
 	fs::File,
-	io::{
-		AsyncReadExt,
-		AsyncWriteExt,
-	},
+	io::{AsyncReadExt, AsyncWriteExt},
 };
 
 const CONF_LOCATION: &str = "config.toml";
@@ -30,13 +21,6 @@ impl Config {
 		Self {
 			keyring_key: [0u8; 32],
 			connection_string: "NaN".to_string(),
-		}
-	}
-
-	pub(crate) fn build(self) -> Self {
-		Self {
-			keyring_key: self.keyring_key,
-			connection_string: self.connection_string,
 		}
 	}
 

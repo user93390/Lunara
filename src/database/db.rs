@@ -23,8 +23,8 @@ pub struct Database {
 
 impl Database {
 	pub async fn connect(conn_str: &str) -> Result<Self, DbErr> {
-		let db_conn:Result<DatabaseConnection, DbErr> = SeaDatabase::connect(conn_str).await;
-		
+		let db_conn: Result<DatabaseConnection, DbErr> = SeaDatabase::connect(conn_str).await;
+
 		match db_conn {
 			Ok(_) => {
 				info!("Address fond!")
@@ -33,10 +33,8 @@ impl Database {
 				warn!("Database hasn't started yet or doesn't exist.")
 			}
 		}
-		
-		Ok(Self { 
-			conn: db_conn?
-		})
+
+		Ok(Self { conn: db_conn? })
 	}
 
 	pub fn conn(&self) -> &DatabaseConnection {

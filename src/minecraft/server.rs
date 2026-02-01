@@ -14,24 +14,12 @@
  * limitations under the License.
  */
 
-use serde::{
-	Deserialize,
-	Serialize,
-};
+use serde::{Deserialize, Serialize};
 
-use std::path::{
-	Path,
-	PathBuf,
-};
+use std::path::{Path, PathBuf};
 use tokio::{
-	fs::{
-		create_dir_all,
-		File,
-	},
-	io::{
-		AsyncReadExt,
-		AsyncWriteExt,
-	},
+	fs::{File, create_dir_all},
+	io::{AsyncReadExt, AsyncWriteExt},
 };
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -96,8 +84,7 @@ impl Server {
 			toml::from_str::<Cache>(&contents)
 				.map(|c| c.servers)
 				.unwrap_or_else(|_| vec![])
-		}
-		else {
+		} else {
 			vec![]
 		};
 

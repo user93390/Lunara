@@ -23,7 +23,7 @@ mod keyring;
 mod minecraft;
 mod route;
 
-use axum::Router;
+use axum::{Json, Router};
 use std::collections::HashMap;
 use tower_http::services::{ServeDir, ServeFile};
 
@@ -31,26 +31,15 @@ use crate::{
 	config::Config,
 	database::Database,
 	keyring::keyring_service::KeyringService,
-	route::{
-		api_route,
-		auth_route,
-	},
+	route::{api_route, auth_route},
 };
 
-use log::{
-	error,
-	info,
-	warn,
-	LevelFilter,
-};
+use log::{error, info, warn, LevelFilter};
 
 use crate::route::servers::server_api;
-use std::{convert::TryInto, error::Error, path::Path, sync::Arc};
 use axum::routing::get;
-use tokio::{
-	fs::File,
-	net::TcpListener,
-};
+use std::{convert::TryInto, error::Error, path::Path, sync::Arc};
+use tokio::{fs::File, net::TcpListener};
 
 const SERVER_ADDR: &str = "0.0.0.0";
 const SERVER_PORT: u16 = 5000;
@@ -65,6 +54,7 @@ const POSTGRES_PASSWORD_DEF: &str = "postgres";
 pub struct App {
 	config: Config,
 }
+
 impl App {
 	/// <p>Create an asynchronous router.</p>
 	/// <p>Return all routes by nesting them inside a brand-new route.</p>
@@ -87,17 +77,17 @@ impl App {
 			.append_index_html_on_directories(true)
 			.not_found_service(ServeFile::new("static/index.html"));
 
-		Ok(
-			Router::new()
-				.route("/health", get("Healthy!"))
-				.nest("/auth/v1", auth_route)
-				.nest("/api", api_route)
-				.nest("/api", server_api)
-				.fallback_service(serve_dir)
-		)
+		Ok(Router::new()
+			.route("/health", get(Json("Healthy!")))
+			.nest("/auth/v1", auth_route)
+			.nest("/api", api_route)
+			.nest("/api", server_api)
+			.fallback_service(serve_dir))
 	}
 
-	pub async fn init_kering(keyring_service: &KeyringService) -> Result<(), Box<dyn Error + Send + Sync>> {
+	pub async fn init_kering(
+		keyring_service: &KeyringService,
+	) -> Result<(), Box<dyn Error + Send + Sync>> {
 		let secrets = [
 			("db.host", POSTGRES_HOST_DEF),
 			("db.port", POSTGRES_PORT_DEF),
@@ -110,17 +100,21 @@ impl App {
 
 		for (key, value) in hash {
 			if let Err(e) = keyring_service.set_secret(key, value).await {
-				error!("Failed to store secret '{}' in keyring: {}. Using default.", key, e);
+				error!("Keyring failed!");
+
+				error!(
+					"Failed to store secret '{}' in keyring: {}. Using default.",
+					key, e
+				);
 			}
 		}
-
 		Ok(())
 	}
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
-	let config_path : &Path= Path::new("config.toml");
+	let config_path: &Path = Path::new("config.toml");
 
 	if !config_path.exists() {
 		File::create_new("config.toml").await?;
@@ -138,6 +132,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 		.format_timestamp_secs()
 		.format_level(true)
 		.filter_level(LevelFilter::Info)
+		.filter_module("sqlx::query", LevelFilter::Warn)
 		.init();
 
 	info!("Running Lunara.");
@@ -179,7 +174,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
 	info!("Creating connection...");
 
-	let connection_string = format!(
+	let connection_string: String = format!(
 		"postgres://{}:{}@{}:{}/{}",
 		user, password, host, port, name
 	);
@@ -203,13 +198,16 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 		Err(e) => {
 			error!("Failed to connect to database: {}", e);
 			warn!("Starting server in degraded mode. Database-dependent routes will fail.");
-			
+
 			let serve_dir = ServeDir::new("static")
 				.append_index_html_on_directories(true)
 				.not_found_service(ServeFile::new("static/index.html"));
 
 			Router::new()
-				.route("/health", get("Healthy (degraded mode - no database)"))
+				.route(
+					"/health",
+					get(Json("Healthy (degraded mode - no database)")),
+				)
 				.fallback_service(serve_dir)
 		}
 	};

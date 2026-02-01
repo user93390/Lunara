@@ -13,39 +13,48 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-use crate::{
-	database::Database,
-	entity::accounts::ActiveModel,
-};
-use axum::{
-	extract::{
-		Path,
-		State,
-	},
-	http::StatusCode,
-};
-use sea_orm::{
-	ActiveModelTrait,
-	Set,
-};
+use crate::api::auth::Authentication;
+use crate::api::auth::login::LoginAuth;
+use crate::{database::Database, entity::accounts::ActiveModel};
+use axum::http::StatusCode;
+use sea_orm::{ActiveModelTrait, Set};
+use std::error::Error;
 use std::sync::Arc;
 use uuid::Uuid;
 
-#[axum::debug_handler]
-pub(crate) async fn create_account(
-	State(db): State<Arc<Database>>, Path((uuid, username, password)): Path<(Uuid, String, String)>,
-) -> Result<StatusCode, StatusCode> {
-	let new_account = ActiveModel {
-		uid: Set(uuid),
-		username: Set(username),
-		password: Set(password),
-	};
+#[derive(Clone)]
+pub struct SignupAuth {
+	pub(crate) uuid: Uuid,
+	pub(crate) nickname: String,
+	pub(crate) password: Vec<u8>,
+	pub(crate) db: Arc<Database>,
+}
 
-	new_account
-		.insert(db.conn())
-		.await
-		.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+impl Authentication for SignupAuth {
+	async fn await_login(
+		&self, _auth: LoginAuth,
+	) -> Result<StatusCode, Box<dyn Error + Sync + Send>> {
+		Ok(StatusCode::NOT_IMPLEMENTED)
+	}
+	async fn await_signup(
+		&self, auth: SignupAuth,
+	) -> Result<StatusCode, Box<dyn Error + Sync + Send>> {
+		let uuid = auth.uuid;
+		let username = auth.nickname;
+		let password = String::from_utf8(auth.password)?;
 
-	Ok(StatusCode::CREATED)
+		let new_account = ActiveModel {
+			uid: Set(uuid),
+			username: Set(username),
+			password: Set(password),
+		};
+
+		new_account
+			.insert(self.db.conn())
+			.await
+			.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+			.unwrap();
+
+		Ok(StatusCode::CREATED)
+	}
 }

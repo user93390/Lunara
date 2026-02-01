@@ -16,26 +16,12 @@
 use crate::minecraft::server::Server;
 use serde::Deserialize;
 
-use axum::{
-	http::StatusCode,
-	routing::get,
-	Json,
-	Router,
-};
+use axum::{Json, Router, http::StatusCode, routing::get};
 
-use log::{
-	info,
-	warn,
-};
+use log::{info, warn};
 
-use std::{
-	error::Error,
-	path::Path,
-};
-use tokio::{
-	fs::File,
-	io::AsyncReadExt,
-};
+use std::{error::Error, path::Path};
+use tokio::{fs::File, io::AsyncReadExt};
 
 #[derive(Deserialize)]
 struct Cache {
