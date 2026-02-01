@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-use std::io::Read;
-use crate::api::auth::Authentication;
 use crate::api::auth::login::LoginAuth;
 use crate::api::auth::signup::SignupAuth;
+use crate::api::auth::Authentication;
 use crate::database::Database;
 use crate::entity::accounts::{Column, Entity, Model};
 use axum::extract::Path;
@@ -24,17 +23,14 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::{Json, Router};
 use base64::engine::general_purpose;
-use base64::{Engine, alphabet, engine};
+use base64::{alphabet, engine, Engine};
 use log::{info, warn};
-use reqwest::{Body, StatusCode};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, Set};
 use std::sync::Arc;
 use uuid::Uuid;
 
-use aes_gcm::{
-	aead::{Aead, AeadCore, KeyInit, OsRng},
-	Aes256Gcm, Key, Nonce
-};
+use axum::body::Body;
+use axum::http::StatusCode;
 
 pub(crate) async fn auth_api(db: Database) -> Router {
 	Router::new()
@@ -50,7 +46,7 @@ async fn signup(
 	let username_bytes = engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD)
 		.decode(username_b64)
 		.unwrap();
-	
+
 	let username = String::from_utf8(username_bytes).unwrap();
 
 	let password = engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD)

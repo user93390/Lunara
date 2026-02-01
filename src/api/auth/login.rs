@@ -47,7 +47,7 @@ impl Authentication for LoginAuth {
 			return Ok(StatusCode::OK);
 		}
 
-		Ok(StatusCode::OK)
+		Ok(StatusCode::UNAUTHORIZED)
 	}
 
 	async fn await_signup(

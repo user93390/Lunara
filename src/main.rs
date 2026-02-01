@@ -34,7 +34,7 @@ use crate::{
 	route::{api_route, auth_route},
 };
 
-use log::{LevelFilter, error, info, warn};
+use log::{error, info, warn, LevelFilter};
 
 use crate::route::servers::server_api;
 use axum::routing::get;
@@ -77,14 +77,12 @@ impl App {
 			.append_index_html_on_directories(true)
 			.not_found_service(ServeFile::new("static/index.html"));
 
-		Ok(
-			Router::new()
-			.route("/health", get("Healthy!"))
+		Ok(Router::new()
+			.route("/health", get(Json("Healthy!")))
 			.nest("/auth/v1", auth_route)
 			.nest("/api", api_route)
 			.nest("/api", server_api)
-			.fallback_service(serve_dir)
-		)
+			.fallback_service(serve_dir))
 	}
 
 	pub async fn init_kering(
