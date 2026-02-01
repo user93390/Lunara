@@ -15,6 +15,8 @@
  */
 
 extern crate log;
+extern crate alloc;
+
 mod api;
 mod config;
 mod database;
@@ -25,6 +27,9 @@ mod route;
 
 use axum::{Json, Router};
 use std::collections::HashMap;
+use std::error::Error;
+use std::path::Path;
+use std::sync::Arc;
 use tower_http::services::{ServeDir, ServeFile};
 
 use crate::{
@@ -38,7 +43,6 @@ use log::{error, info, warn, LevelFilter};
 
 use crate::route::servers::server_api;
 use axum::routing::get;
-use std::{convert::TryInto, error::Error, path::Path, sync::Arc};
 use tokio::{fs::File, net::TcpListener};
 
 const SERVER_ADDR: &str = "0.0.0.0";
