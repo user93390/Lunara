@@ -23,7 +23,6 @@ deny = [
     { crate = "openssl", use-instead = "rustls" },
     { crate = "openssl-sys", use-instead = "rustls" },
     "libssh2-sys",
-    { crate = "cmake", use-instead = "cc" },
     { crate = "windows", reason = "bloated and unnecessary", use-instead = "ideally inline bindings, practically, windows-sys" },
 ]
 skip = [
@@ -31,9 +30,14 @@ skip = [
     { crate = "rand_core" },
     { crate = "rand_chacha" },
     { crate = "getrandom" },
+    { crate = "hashbrown", reason = "sqlx-core and indexmap require different versions" },
+    { crate = "core-foundation", reason = "system-configuration and security-framework require different versions" },
+    { crate = "heck", reason = "sea-orm dependencies require different versions" },
 ]
 skip-tree = [
     { crate = "windows-sys", reason = "a foundational crate for many that bumps far too frequently to ever have a shared version" },
+    { crate = "aws-lc-sys", reason = "rustls crypto provider build dependency" },
+    { crate = "cmake", reason = "build dependency of aws-lc-sys" },
 ]
 
 [sources]
@@ -49,6 +53,7 @@ allow = [
     "BSD-3-Clause",
     "Zlib",
     "Unicode-3.0",
-    "CDLA-Permissive-2.0"
+    "CDLA-Permissive-2.0",
+    "OpenSSL",
 ]
 exceptions = []

@@ -1,0 +1,2 @@
+keyring_key = [111, 61, 53, 144, 125, 242, 46, 176, 58, 238, 106, 115, 27, 197, 82, 68, 116, 193, 184, 253, 223, 200, 97, 248, 112, 67, 27, 44, 235, 87, 85, 86]
+connection_string = "postgres://postgres:postgres@postgres_database:5432/postgres"
