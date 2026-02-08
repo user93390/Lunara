@@ -6,10 +6,10 @@ COPY init.sql /docker-entrypoint-initdb.d/init.sql
 
 ENV CI=true
 
+RUN apk add --no-cache make musl-dev openssl-dev openssl-libs-static pkgconfig
+
 RUN apk add --no-cache npm
 RUN npm install -g bun
-
-RUN apk add make
 
 COPY . .
 
