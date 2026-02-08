@@ -1,22 +1,13 @@
 {
-  "name": "Lunara dev environment",
-  "remoteUser": "lunara-developer",
-  "service": "dev-machine",
-  "workspaceFolder": "/home/lunara-developer/",
-  "dockerComposeFile": "compose-dev.yml",
+  "image": "rust:latest",
+  "name": "Lunara dev-container",
   "customizations": {
-    "jetbrains": {
-      "backend": "RustRover",
-      "plugins": [
-        "org.mvnsearch.plugins.justPlugin"
-      ]
-    },
     "vscode": {
       "extensions": [
         "rust-lang.rust-analyzer",
-        "skellock.just",
         "tamasfe.even-better-toml"
       ]
     }
-  }
+  },
+  "privileged": true
 }
