@@ -28,12 +28,12 @@ base64 = "0.22.1"
 
 tower-cookies = "0.11.0"
 reqwest = { version = "0.13.1", features = ["json"] }
-serde_json = "1.0.149"
 thiserror = "2.0.18"
 sentry = "0.46.2"
-
-
+serde_json = "1.0.149"
 [profile.release]
-opt-level = "z"
-lto = true
+
+
 codegen-units = 1
+lto = true
+opt-level = "z"
