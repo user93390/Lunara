@@ -122,17 +122,6 @@ impl App {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
-	let _ = sentry::init(("https://79257f010018d74bb6b738d32482692e@o4510848947519488.ingest.us.sentry.io/4510849103495168", sentry::ClientOptions {
-		release: sentry::release_name!(),
-		..Default::default()
-	}));
-
-	let _guard = sentry::init(sentry::ClientOptions {
-		release: sentry::release_name!(),
-		traces_sample_rate: 0.2,
-		..Default::default()
-	});
-
 	let config_path: &Path = Path::new("config.toml");
 
 	if !config_path.exists() {
