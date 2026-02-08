@@ -1,6 +1,6 @@
 use std::{error::Error, str::from_utf8};
 
-use log::warn;
+use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -82,6 +82,8 @@ impl Config {
 
 		let mut file = File::create(path).await?;
 		file.write_buf(&mut toml.as_bytes()).await?;
+
+		info!("Wrote to path.");
 
 		Ok(true)
 	}

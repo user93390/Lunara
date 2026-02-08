@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-extern crate log;
 extern crate alloc;
+extern crate log;
 
 mod api;
 mod config;
 mod database;
 mod entity;
-mod keyring;
-mod minecraft;
+mod http;
 mod route;
+mod mc;
+pub(crate) mod keyring_service;
 
 use axum::{Json, Router};
 use std::collections::HashMap;
@@ -35,20 +36,21 @@ use tower_http::services::{ServeDir, ServeFile};
 use crate::{
 	config::Config,
 	database::Database,
-	keyring::keyring_service::KeyringService,
 	route::{api_route, auth_route},
 };
 
 use log::{error, info, warn, LevelFilter};
 
-use crate::route::servers::server_api;
 use axum::routing::get;
 use tokio::{fs::File, net::TcpListener};
+use tower_cookies::CookieManagerLayer;
+use keyring_service::KeyringService;
+use crate::route::mc_route::mc_route;
 
 const SERVER_ADDR: &str = "0.0.0.0";
 const SERVER_PORT: u16 = 5000;
 
-// Fallbacks or defaults
+// Defaults for any postgres database
 const POSTGRES_PORT_DEF: &str = "5432";
 const POSTGRES_HOST_DEF: &str = "postgres_database";
 const POSTGRES_NAME_DEF: &str = "postgres";
@@ -62,11 +64,10 @@ pub struct App {
 impl App {
 	/// <p>Create an asynchronous router.</p>
 	/// <p>Return all routes by nesting them inside a brand-new route.</p>
-	/// Pretty expensive function.
 	async fn start(self) -> Result<Router, Box<dyn Error + Send + Sync>> {
 		let conn_str: &String = self.config.conn_str();
 
-		info!("{}", conn_str);
+		info!("database connection str: {}", conn_str);
 
 		let result: Database = database::database(conn_str).await?;
 
@@ -75,18 +76,21 @@ impl App {
 
 		let auth_route: Router<_> = auth_route::auth_api((*db).clone()).await;
 		let api_route: Router<_> = api_route::user_api((*db).clone()).await;
-		let server_api: Router<_> = server_api().await;
+		let mc_route: Router<_> = mc_route();
 
 		let serve_dir = ServeDir::new("static")
 			.append_index_html_on_directories(true)
 			.not_found_service(ServeFile::new("static/index.html"));
 
-		Ok(Router::new()
+		Ok(
+			Router::new()
+			.layer(CookieManagerLayer::new())
 			.route("/health", get(Json("Healthy!")))
 			.nest("/auth/v1", auth_route)
 			.nest("/api", api_route)
-			.nest("/api", server_api)
-			.fallback_service(serve_dir))
+			.nest("/mc", mc_route)
+			.fallback_service(serve_dir)
+		)
 	}
 
 	pub async fn init_kering(
@@ -200,6 +204,8 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 			router
 		}
 		Err(e) => {
+			let mc_route: Router<_> = mc_route();
+
 			error!("Failed to connect to database: {}", e);
 			warn!("Starting server in degraded mode. Database-dependent routes will fail.");
 
@@ -212,6 +218,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 					"/health",
 					get(Json("Healthy (degraded mode - no database)")),
 				)
+				.nest("/mc", mc_route)
 				.fallback_service(serve_dir)
 		}
 	};
@@ -233,5 +240,5 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 
 fn conv_vec_arr<T, const V: usize>(v: Vec<T>) -> [T; V] {
 	v.try_into()
-		.unwrap_or_else(|_| panic!("Expected a Vec of length {}", V))
+		.unwrap_or_else(|_| panic!("Expected vec of length {}", V))
 }

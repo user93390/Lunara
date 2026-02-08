@@ -18,14 +18,16 @@ import './styles/style.scss';
 
 import CredentialLoginPage from './pages/login'
 import HomePage from './pages/home.tsx'
+import PluginBoard from './pages/plugin.tsx'
 
 import { Routes, Route } from 'react-router-dom';
 
 function App() {
     return (
         <Routes>
-            <Route path="/home" element={<HomePage/>} />
+            <Route path="/" element={<HomePage/>} />
             <Route path="/login" element={<CredentialLoginPage/>} />
+            <Route path="/plugins" element={<PluginBoard/>} />
         </Routes>
     );
 }

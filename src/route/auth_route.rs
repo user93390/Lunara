@@ -13,24 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-use crate::api::auth::login::LoginAuth;
-use crate::api::auth::signup::SignupAuth;
-use crate::api::auth::Authentication;
+use crate::api::authentication::Authentication;
+use crate::api::authentication::login::LoginAuth;
+use crate::api::authentication::signup::SignupAuth;
 use crate::database::Database;
-use crate::entity::accounts::{Column, Entity, Model};
+use crate::entity::accounts::{Column, Entity};
 use axum::extract::Path;
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::{Json, Router};
 use base64::engine::general_purpose;
-use base64::{alphabet, engine, Engine};
+use base64::{Engine, alphabet, engine};
 use log::{info, warn};
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, Set};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use std::sync::Arc;
 use uuid::Uuid;
 
 use axum::body::Body;
 use axum::http::StatusCode;
+use tower_cookies::Cookie;
 
 pub(crate) async fn auth_api(db: Database) -> Router {
 	Router::new()
@@ -129,8 +130,7 @@ async fn login(
 	};
 
 	if account.password.eq(&password_str) {
-		info!("Authorized.");
-
+		info!("Authorized as {}!", account.username);
 		return Response::builder()
 			.status(StatusCode::ACCEPTED)
 			.body(Body::from("Logged in!"))

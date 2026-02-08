@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-use crate::api::auth::Authentication;
-use crate::api::auth::signup::SignupAuth;
+use crate::api::authentication::Authentication;
+use crate::api::authentication::signup::SignupAuth;
 use crate::database::Database;
 use crate::entity::accounts::{Column, Entity};
 use axum::http::StatusCode;
@@ -33,7 +33,8 @@ pub struct LoginAuth {
 
 impl Authentication for LoginAuth {
 	async fn await_login(
-		&self, auth: LoginAuth,
+		&self,
+		auth: LoginAuth,
 	) -> Result<StatusCode, Box<dyn Error + Sync + Send>> {
 		let auth_pw_str = &String::from_utf8(auth.password)?;
 
@@ -51,7 +52,8 @@ impl Authentication for LoginAuth {
 	}
 
 	async fn await_signup(
-		&self, _auth: SignupAuth,
+		&self,
+		_auth: SignupAuth,
 	) -> Result<StatusCode, Box<dyn Error + Sync + Send>> {
 		Ok(StatusCode::NOT_IMPLEMENTED)
 	}

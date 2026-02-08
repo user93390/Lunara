@@ -24,6 +24,7 @@ use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
+use crate::mc::server::ServerBrand;
 
 pub(crate) async fn user_api(database: Database) -> Router {
 	Router::new()
@@ -53,7 +54,8 @@ async fn users(
 
 #[axum::debug_handler(state = Arc<Database>)]
 async fn search_user(
-	Path(uuid): Path<Uuid>, State(db): State<Arc<Database>>,
+	Path(uuid): Path<Uuid>,
+	State(db): State<Arc<Database>>,
 ) -> Result<Json<HashMap<Uuid, String>>, (StatusCode, String)> {
 	let mut users: HashMap<Uuid, String> = HashMap::new();
 

@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-use crate::api::auth::Authentication;
-use crate::api::auth::login::LoginAuth;
+use crate::api::authentication::Authentication;
+use crate::api::authentication::login::LoginAuth;
 use crate::{database::Database, entity::accounts::ActiveModel};
 use axum::http::StatusCode;
 use sea_orm::{ActiveModelTrait, Set};
@@ -32,12 +32,14 @@ pub struct SignupAuth {
 
 impl Authentication for SignupAuth {
 	async fn await_login(
-		&self, _auth: LoginAuth,
+		&self,
+		_auth: LoginAuth,
 	) -> Result<StatusCode, Box<dyn Error + Sync + Send>> {
 		Ok(StatusCode::NOT_IMPLEMENTED)
 	}
 	async fn await_signup(
-		&self, auth: SignupAuth,
+		&self,
+		auth: SignupAuth,
 	) -> Result<StatusCode, Box<dyn Error + Sync + Send>> {
 		let uuid = auth.uuid;
 		let username = auth.nickname;

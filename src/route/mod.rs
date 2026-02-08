@@ -16,5 +16,4 @@
 
 pub(crate) mod api_route;
 pub(crate) mod auth_route;
-
-pub(crate) mod servers;
+pub(crate) mod mc_route;

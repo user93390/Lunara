@@ -1,29 +1,32 @@
-<!--
+/*
  Copyright 2026 seasnail1
-
+ 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
-
+ 
      http://www.apache.org/licenses/LICENSE-2.0
-
+ 
  Unless required by applicable law or agreed to in writing, software
  distributed under the License is distributed on an "AS IS" BASIS,
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License.
--->
+ 
+ */
+use serde::Deserialize;
 
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lunara Web Application</title>
-  <script type="module" crossorigin src="/assets/index-BAaxsy41.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-hBkqJnZ3.css">
-</head>
-<body>
-<div id="root"></div>
-</body>
-</html>
+#[derive(Deserialize, Clone)]
+pub struct Plugin {
+    name: String,
+    version: String,
+}
+
+impl Plugin {
+    pub fn download(&self) -> String {
+        format!(
+            "https://hangar.papermc.io/api/v1/projects/{}/versions/{}/PAPER/download",
+            self.name, self.version
+        )
+    }
+}

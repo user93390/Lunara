@@ -33,7 +33,9 @@ impl KeyringService {
 		}
 	}
 	pub async fn set_secret(
-		&self, key: &str, secret: &str,
+		&self,
+		key: &str,
+		secret: &str,
 	) -> Result<(), Box<dyn Error + Send + Sync>> {
 		let service_name: String = self.service_name.clone();
 		let key: String = key.to_string();

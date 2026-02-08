@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-use crate::api::auth::login::LoginAuth;
-use crate::api::auth::signup::SignupAuth;
+use crate::api::authentication::login::LoginAuth;
+use crate::api::authentication::signup::SignupAuth;
 use axum::http::StatusCode;
 use std::error::Error;
 
@@ -23,23 +23,23 @@ pub(crate) mod signup;
 
 pub trait Authentication {
 	async fn await_login(
-		&self, auth: LoginAuth,
+		&self,
+		auth: LoginAuth,
 	) -> Result<StatusCode, Box<dyn Error + Sync + Send>> {
 		let _ = auth;
 
-		Err(Box::new(std::io::Error::new(
-			std::io::ErrorKind::Other,
+		Err(Box::new(std::io::Error::other(
 			"await_login not implemented",
 		)))
 	}
 
 	async fn await_signup(
-		&self, auth: SignupAuth,
+		&self,
+		auth: SignupAuth,
 	) -> Result<StatusCode, Box<dyn Error + Sync + Send>> {
 		let _ = auth;
 
-		Err(Box::new(std::io::Error::new(
-			std::io::ErrorKind::Other,
+		Err(Box::new(std::io::Error::other(
 			"await_signup not implemented",
 		)))
 	}

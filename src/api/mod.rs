@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 
-pub(crate) mod auth;
+pub(crate) mod authentication;

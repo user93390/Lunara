@@ -1,6 +1,6 @@
 comment_width = 100
 format_code_in_doc_comments = true
-fn_params_layout = "Compressed"
+fn_params_layout = "Tall"
 imports_granularity = "Crate"
 imports_layout = "Vertical"
 wrap_comments = true

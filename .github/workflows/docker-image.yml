@@ -7,12 +7,27 @@ on:
     branches: [ "master" ]
 
 jobs:
-
-  build:
-
+  test-and-build:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag lunara:$(date +%s)
+      - uses: actions/checkout@v4
+
+      - name: Install Rust & Cov
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Run Tests
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - run: cargo llvm-cov --all-features --lcov --output-path lcov.info
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag lunara:test
