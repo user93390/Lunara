@@ -157,6 +157,20 @@ mod tests {
 		GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD).encode(input)
 	}
 
+	#[test]
+	fn base64_encodes_fine() {
+		let expected = String::from("Hello, World!");
+
+		let encoded = String::from("SGVsbG8sIFdvcmxkIQ");
+		let decoded = GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD)
+			.decode(encoded)
+			.unwrap();
+
+		let decoded_str= String::from_utf8(decoded).unwrap();
+
+		assert_eq!(expected, decoded_str)
+	}
+
 	#[tokio::test]
 	async fn auth_api_router_has_signup_route() {
 		let db = mock_database().await;
@@ -170,7 +184,7 @@ mod tests {
 			let response: Response = app
 				.oneshot(
 					Request::builder()
-						.uri(&format!("/signup/{}/{}/{}", uuid, username, password))
+						.uri(format!("/signup/{}/{}/{}", uuid, username, password))
 						.body(Body::empty())
 						.unwrap(),
 				)
@@ -193,7 +207,7 @@ mod tests {
 			let response: Response = app
 				.oneshot(
 					Request::builder()
-						.uri(&format!("/login/{}/{}", username, password))
+						.uri(format!("/login/{}/{}", username, password))
 						.body(Body::empty())
 						.unwrap(),
 				)
@@ -225,8 +239,8 @@ mod tests {
 		}
 	}
 
-	async fn mock_database() -> Option<crate::database::Database> {
-		crate::database::Database::connect("postgres://postgres:postgres@localhost:5432/lunara")
+	async fn mock_database() -> Option<Database> {
+		Database::connect("postgres://postgres:postgres@localhost:5432/lunara")
 			.await
 			.ok()
 	}
