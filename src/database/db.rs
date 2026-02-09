@@ -41,3 +41,26 @@ impl Database {
 		&self.conn
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[tokio::test]
+	async fn connect_fails_with_invalid_connection_string() {
+		let result = Database::connect("invalid://not-a-real-db").await;
+		assert!(result.is_err());
+	}
+
+	#[tokio::test]
+	async fn connect_fails_with_empty_string() {
+		let result = Database::connect("").await;
+		assert!(result.is_err());
+	}
+
+	#[tokio::test]
+	async fn connect_fails_with_unreachable_host() {
+		let result = Database::connect("postgres://user:pass@127.0.0.1:59999/nonexistent").await;
+		assert!(result.is_err());
+	}
+}

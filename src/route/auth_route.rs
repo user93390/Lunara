@@ -31,7 +31,6 @@ use uuid::Uuid;
 
 use axum::body::Body;
 use axum::http::StatusCode;
-use tower_cookies::Cookie;
 
 pub(crate) async fn auth_api(db: Database) -> Router {
 	Router::new()

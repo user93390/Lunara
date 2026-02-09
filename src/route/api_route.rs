@@ -24,7 +24,6 @@ use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
-use crate::mc::server::ServerBrand;
 
 pub(crate) async fn user_api(database: Database) -> Router {
 	Router::new()
@@ -70,4 +69,78 @@ async fn search_user(
 	}
 
 	Ok(Json(users))
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use axum::body::Body;
+	use axum::http::{Request, StatusCode};
+	use axum::response::Response;
+	use tower::ServiceExt;
+
+	#[tokio::test]
+	async fn user_api_router_has_users_route() {
+		let db = mock_database().await;
+
+		if let Some(db) = db {
+			let app = user_api(db).await;
+
+			let response: Response = app
+				.oneshot(Request::builder().uri("/users").body(Body::empty()).unwrap())
+				.await
+				.unwrap();
+
+			assert_ne!(response.status(), StatusCode::NOT_FOUND);
+		}
+	}
+
+	#[tokio::test]
+	async fn user_api_router_has_search_route() {
+		let db = mock_database().await;
+
+		if let Some(db) = db {
+			let app = user_api(db).await;
+			let test_uuid = Uuid::new_v4();
+
+			let response: Response = app
+				.oneshot(
+					Request::builder()
+						.uri(&format!("/users/search/{}", test_uuid))
+						.body(Body::empty())
+						.unwrap(),
+				)
+				.await
+				.unwrap();
+
+			assert_ne!(response.status(), StatusCode::NOT_FOUND);
+		}
+	}
+
+	#[tokio::test]
+	async fn user_api_returns_404_for_unknown_route() {
+		let db = mock_database().await;
+
+		if let Some(db) = db {
+			let app = user_api(db).await;
+
+			let response: Response = app
+				.oneshot(
+					Request::builder()
+						.uri("/nonexistent")
+						.body(Body::empty())
+						.unwrap(),
+				)
+				.await
+				.unwrap();
+
+			assert_eq!(response.status(), StatusCode::NOT_FOUND);
+		}
+	}
+
+	async fn mock_database() -> Option<Database> {
+		Database::connect("postgres://postgres:postgres@localhost:5432/lunara")
+			.await
+			.ok()
+	}
 }

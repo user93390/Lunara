@@ -15,6 +15,7 @@
  */
 
 extern crate alloc;
+extern crate core;
 extern crate log;
 
 mod api;
@@ -22,9 +23,9 @@ mod config;
 mod database;
 mod entity;
 mod http;
-mod route;
-mod mc;
 pub(crate) mod keyring_service;
+mod mc;
+mod route;
 
 use axum::{Json, Router};
 use std::collections::HashMap;
@@ -39,13 +40,13 @@ use crate::{
 	route::{api_route, auth_route},
 };
 
-use log::{error, info, warn, LevelFilter};
+use log::{LevelFilter, error, info, warn};
 
+use crate::route::mc_route::mc_route;
 use axum::routing::get;
+use keyring_service::KeyringService;
 use tokio::{fs::File, net::TcpListener};
 use tower_cookies::CookieManagerLayer;
-use keyring_service::KeyringService;
-use crate::route::mc_route::mc_route;
 
 const SERVER_ADDR: &str = "0.0.0.0";
 const SERVER_PORT: u16 = 5000;
@@ -82,15 +83,13 @@ impl App {
 			.append_index_html_on_directories(true)
 			.not_found_service(ServeFile::new("static/index.html"));
 
-		Ok(
-			Router::new()
+		Ok(Router::new()
 			.layer(CookieManagerLayer::new())
 			.route("/health", get(Json("Healthy!")))
 			.nest("/auth/v1", auth_route)
 			.nest("/api", api_route)
 			.nest("/mc", mc_route)
-			.fallback_service(serve_dir)
-		)
+			.fallback_service(serve_dir))
 	}
 
 	pub async fn init_kering(
