@@ -1,4 +1,4 @@
-[image](https://github.com/user93390/Lunara/blob/master/Lunara.svg)
+![image](https://github.com/user93390/Lunara/blob/master/Lunara.svg)
 
 > Note that Lunara is still in heavy development.
 
