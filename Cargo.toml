@@ -21,7 +21,7 @@ log = "0.4.29"
 env_logger = "0.11.8"
 hex = "0.4.3"
 rand = "0.10.0"
-toml = "1.0.1+spec-1.1.0"
+toml = "1.0.3+spec-1.1.0"
 
 tower-http = { version = "0.6.8", features = ["cors", "fs"] }
 base64 = "0.22.1"
