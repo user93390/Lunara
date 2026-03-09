@@ -8,9 +8,6 @@ ENV CI=true
 
 RUN apk add --no-cache make musl-dev openssl-dev openssl-libs-static pkgconfig
 
-RUN apk add --no-cache npm
-RUN npm install -g bun
-
 COPY . .
 
 RUN make test
@@ -21,7 +18,7 @@ FROM alpine:latest
 
 WORKDIR /app
 
-RUN apk add --no-cache keyutils openjdk21
+RUN apk add --no-cache keyutils
 
 COPY --from=builder /app/target/release/Lunara /usr/local/bin/Lunara
 COPY --from=builder /app/static /app/static

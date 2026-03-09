@@ -13,7 +13,6 @@
 ![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white) \
 ![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white) \
 ![Licence](https://img.shields.io/badge/Apache--2.0-green?style=for-the-badge) \
-![React](https://img.shields.io/badge/React-%2320232a.svg?logo=react&logoColor=%2361DAFB) \
 ![Git](https://img.shields.io/badge/Git-F05032?logo=git&logoColor=fff)
 
 # Overview
@@ -52,7 +51,7 @@
 ```bash
 git clone git@github.com:user93390/lunara.git && cd lunara
 
-make build_all
+cargo build
 ```
 
 # Docker Guide
