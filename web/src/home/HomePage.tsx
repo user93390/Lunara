@@ -143,7 +143,6 @@ function HomePage() {
                     <Paper className="grid-child" elevation={2}>
                         <Typography variant="h6" fontWeight={500}>
                             Installed Plugins
-                            </div>
                         </Typography>
                     </Paper>
 
