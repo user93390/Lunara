@@ -18,11 +18,11 @@ use sea_orm::{Database as SeaDatabase, DatabaseConnection, DbErr};
 
 #[derive(Clone)]
 pub struct Database {
-	conn: DatabaseConnection,
+	pub conn: DatabaseConnection,
 }
 
 impl Database {
-	pub async fn connect(conn_str: &str) -> Result<Self, DbErr> {
+	pub async fn connect(conn_str: &str) -> Result<Database, DbErr> {
 		let db_conn: Result<DatabaseConnection, DbErr> = SeaDatabase::connect(conn_str).await;
 
 		match db_conn {

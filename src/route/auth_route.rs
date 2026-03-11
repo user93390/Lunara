@@ -14,26 +14,27 @@
  * limitations under the License.
  */
 
-use crate::api::authentication::Authentication;
-use crate::api::authentication::login::LoginAuth;
-use crate::api::authentication::signup::SignupAuth;
+use crate::api::auth::login::LoginStruct;
 use crate::database::Database;
-use crate::entity::accounts::{Column, Entity};
+use crate::entity::accounts::ActiveModel;
+use crate::keyring_service::KeyringService;
 use axum::Router;
+use axum::body::Body;
 use axum::extract::Path;
+use axum::http::StatusCode;
 use axum::response::Response;
 use axum::routing::get;
+use axum_cookie::cookie::Cookie;
+use axum_cookie::{CookieLayer, CookieManager};
 use base64::engine::general_purpose;
 use base64::{Engine, alphabet, engine};
-use log::{info, warn};
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use log::warn;
+use sea_orm::{ActiveModelTrait, Set};
+use std::result::Result::Err;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use axum::body::Body;
-use axum::http::StatusCode;
-use axum_cookie::{CookieLayer, CookieManager};
-use axum_cookie::cookie::Cookie;
+const SESSION_COOKIE_NAME: &str = "AUTH";
 
 pub(crate) async fn auth_api(db: Database) -> Router {
 	Router::new()
@@ -51,7 +52,7 @@ async fn signup(
 		return response(StatusCode::BAD_REQUEST, "Invalid username encoding.");
 	};
 
-	let Ok(password) = decode_b64(&password_b64) else {
+	let Ok(password) = decode_b64_string(&password_b64) else {
 		return response(StatusCode::BAD_REQUEST, "Invalid password encoding.");
 	};
 
@@ -59,21 +60,14 @@ async fn signup(
 		return response(StatusCode::BAD_REQUEST, "Invalid uuid encoding.");
 	};
 
-	let signup = SignupAuth {
-		uuid,
-		password,
-		nickname: username,
-		db,
+	let new_account = ActiveModel {
+		uid: Set(uuid),
+		username: Set(username.to_lowercase()),
+		password: Set(password),
 	};
 
-	match signup.await_signup(signup.clone()).await {
-		Ok(status) => {
-			if status.is_success() {
-				response(StatusCode::OK, "Signed up!")
-			} else {
-				response(StatusCode::BAD_REQUEST, "Bad request")
-			}
-		}
+	match new_account.insert(db.conn()).await {
+		Ok(_) => response(StatusCode::CREATED, "Signed up!"),
 		Err(e) => {
 			warn!("Signup failed: {}", e);
 			response(StatusCode::INTERNAL_SERVER_ERROR, "Signup failed.")
@@ -83,10 +77,9 @@ async fn signup(
 
 async fn login(
 	manager: CookieManager,
-	axum::extract::State(db): axum::extract::State<Arc<Database>>,
 	Path((uuid_b64, password_b64)): Path<(String, String)>,
 ) -> Response {
-	let Ok(password_bytes) = decode_b64(&password_b64) else {
+	let Ok(password) = decode_b64_string(&password_b64) else {
 		return response(StatusCode::BAD_REQUEST, "Invalid password encoding.");
 	};
 
@@ -94,44 +87,42 @@ async fn login(
 		return response(StatusCode::BAD_REQUEST, "Invalid uuid encoding.");
 	};
 
-	let login = LoginAuth {
-		uuid,
-		password: password_bytes,
-		db: db.clone(),
-	};
+	let service = KeyringService::new("Lunara");
 
-	info!("Authenticating for {}", login.uuid);
+	// check session cookie.
 
-	let account = match Entity::find()
-		.filter(Column::Uid.eq(login.uuid))
-		.one(db.conn())
-		.await
-	{
-		Ok(Some(acc)) => acc,
-		Ok(None) => {
-			warn!("Account not found for UUID: {}", login.uuid);
-			return response(StatusCode::UNAUTHORIZED, "Authentication failed.");
+	if let Some(auth_cookie) = manager.get(SESSION_COOKIE_NAME) {
+		if let Ok(session) = service.get_secret(SESSION_COOKIE_NAME).await {
+			//todo: allow w/ session cookie
 		}
-		Err(e) => {
-			warn!("Database error during account lookup: {}", e);
-			return response(StatusCode::INTERNAL_SERVER_ERROR, "Internal server error.");
-		}
-	};
-
-	let Ok(password_str) = String::from_utf8(login.password.clone()) else {
-		warn!("Invalid UTF-8 in password for UUID: {}", login.uuid);
-		return response(StatusCode::BAD_REQUEST, "Invalid password format.");
-	};
-
-	if account.password.eq(&password_str) {
-		manager.add(Cookie::new("username", account.username.clone()));
-
-		info!("Authorized as {}!", &account.username);
-		return response(StatusCode::ACCEPTED, "Logged in!");
 	}
 
-	warn!("Bad credentials.");
-	response(StatusCode::UNAUTHORIZED, "Authentication failed.")
+	let credentials = LoginStruct { uuid, password };
+	let login_result = credentials.login().await;
+
+	if let Ok(login) = login_result {
+		let cookie_id = Uuid::new_v4();
+
+		save_cookie(manager, SESSION_COOKIE_NAME, &String::from(cookie_id)).await;
+		service
+			.set_secret(
+				String::from(Uuid::new_v4()).as_str(),
+				String::from(cookie_id).as_str(),
+			)
+			.await
+			.unwrap();
+
+		return login;
+	}
+
+	response(StatusCode::ACCEPTED, "Failed to login")
+}
+
+/// Used for storing session Cookies.
+async fn save_cookie<S: Into<String>>(manager: CookieManager, name: S, value: S) {
+	let cookie = Cookie::new(name.into(), value.into());
+
+	manager.add(cookie);
 }
 
 fn response(status: StatusCode, msg: &'static str) -> Response {
@@ -159,6 +150,8 @@ fn decode_b64_uuid(input: &str) -> Result<Uuid, ()> {
 
 #[cfg(test)]
 mod tests {
+	use std::usize;
+
 	use super::*;
 	use axum::body::Body;
 	use axum::http::{Request, StatusCode};
@@ -168,6 +161,19 @@ mod tests {
 
 	fn encode_base64(input: &str) -> String {
 		GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD).encode(input)
+	}
+
+	#[tokio::test]
+	async fn create_response_fine() {
+		let expect = response(StatusCode::BAD_REQUEST, "Test");
+
+		assert_eq!(expect.status(), StatusCode::BAD_REQUEST);
+		let expect = response(StatusCode::BAD_REQUEST, "Test");
+		let body_bytes = axum::body::to_bytes(expect.into_body(), usize::MAX)
+			.await
+			.unwrap();
+
+		assert_eq!(body_bytes, "Test");
 	}
 
 	#[test]

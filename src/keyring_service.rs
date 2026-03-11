@@ -32,6 +32,7 @@ impl KeyringService {
 			service_name: service_name.into(),
 		}
 	}
+
 	pub async fn set_secret(
 		&self,
 		key: &str,
@@ -100,5 +101,33 @@ impl KeyringService {
 		let mut arr: [u8; 32] = [0u8; 32];
 		rand::rng().fill(&mut arr[..]);
 		arr
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use crate::keyring_service::KeyringService;
+
+	#[tokio::test]
+	async fn delete_secret_works() {
+		let keyring = mock_keyring();
+
+		keyring.set_secret("test", "123").await.unwrap();
+
+		let _ = keyring.delete_secret("test").await;
+		assert_eq!(keyring.secret_exists("test").await, false);
+	}
+
+	#[tokio::test]
+	async fn create_secret_works() {
+		let keyring = mock_keyring();
+
+		let can_create = keyring.set_secret("key", "test").await.is_err();
+
+		assert_eq!(can_create, false)
+	}
+
+	fn mock_keyring() -> KeyringService {
+		KeyringService::new("Lunara Test")
 	}
 }

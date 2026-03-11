@@ -26,14 +26,11 @@ mod http;
 pub(crate) mod keyring_service;
 mod mc;
 mod route;
-
 use axum::{Json, Router};
 use std::collections::HashMap;
-use std::env::{Args, args};
 use std::error::Error;
 use std::path::Path;
 use std::sync::Arc;
-use tower_http::services::{ServeDir, ServeFile};
 
 use crate::{
 	config::Config,
@@ -60,9 +57,10 @@ const POSTGRES_NAME_DEF: &str = "postgres";
 const POSTGRES_USER_DEF: &str = "postgres";
 const POSTGRES_PASSWORD_DEF: &str = "postgres";
 
-pub struct App {
-	config: Config,
+pub(crate) struct App {
+	pub config: Config,
 }
+
 impl App {
 	/// Returns a result that contains database-required routes.
 	/// This function initializes a database variable and creates a pointer for it.
@@ -200,14 +198,9 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
 	};
 
 	let mc_route: Router<_> = mc_route();
-	let serve_dir = ServeDir::new("static")
-		.append_index_html_on_directories(true)
-		.not_found_service(ServeFile::new("static/index.html"));
-
 	let mut app = Router::new()
 		.route("/health", get(Json(health_msg)))
-		.nest("/mc", mc_route)
-		.fallback_service(serve_dir);
+		.nest("/mc", mc_route);
 
 	if let Some((auth, api)) = db_routes {
 		app = app.nest("/auth/v1", auth).nest("/api", api);
@@ -238,3 +231,5 @@ fn conv_vec_arr<T, const V: usize>(v: Vec<T>) -> [T; V] {
 	v.try_into()
 		.unwrap_or_else(|_| panic!("Expected vec of length {}", V))
 }
+
+// they losin bud

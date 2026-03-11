@@ -6,13 +6,10 @@ COPY init.sql /docker-entrypoint-initdb.d/init.sql
 
 ENV CI=true
 
-RUN apk add --no-cache make musl-dev openssl-dev openssl-libs-static pkgconfig
-
 COPY . .
 
-RUN make test
-RUN make build
-
+RUN cargo test
+RUN cargo build
 
 FROM alpine:latest
 
@@ -20,10 +17,8 @@ WORKDIR /app
 
 RUN apk add --no-cache keyutils
 
-COPY --from=builder /app/target/release/Lunara /usr/local/bin/Lunara
-COPY --from=builder /app/static /app/static
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Setup keyring service
+RUN keyctl new_session
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["Lunara"]

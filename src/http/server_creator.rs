@@ -1,4 +1,4 @@
-use crate::mc::server::{BuildInfo, ServerBrand, MinecraftServer};
+use crate::mc::server::{BuildInfo, MinecraftServer, ServerBrand};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use reqwest::Client;
