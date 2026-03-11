@@ -17,8 +17,6 @@ WORKDIR /app
 
 RUN apk add --no-cache keyutils
 
-# Setup keyring service
-RUN keyctl new_session
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["keyctl new_session"]
 CMD ["Lunara"]

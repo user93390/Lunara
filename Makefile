@@ -1,5 +1,4 @@
 dock_init:
-	cd web && bun install --lockfile-only
 	cargo generate-lockfile
 	docker build -t lunara .
 
