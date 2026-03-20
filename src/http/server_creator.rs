@@ -14,8 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 */
-
-use crate::mc::server::{MinecraftServer, ServerBrand};
+use crate::mc::server::{BuildInfo, MinecraftServer, ServerBrand};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use reqwest::Client;
