@@ -6,7 +6,7 @@
 
 #### Good-To-Knows
 Language: Rust
-Framework: Axum + React
+Frameworks: Axum
 
 # Prompting
 

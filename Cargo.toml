@@ -5,7 +5,7 @@ license = "Apache-2.0"
 version = "1.0.0"
 name = "Lunara"
 edition = "2024"
-rust-version = "1.92.0"
+rust-version = "1.91.0"
 description = "A modern way of making containerized, fully local Minecraft servers."
 keywords = ["Docker", "Minecraft", "Containerized", "Self-hosted"]
 
@@ -29,6 +29,7 @@ reqwest = { version = "0.13.1", features = ["json"] }
 thiserror = "2.0.18"
 serde_json = "1.0.149"
 axum-cookie = "0.2.4"
+jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
 
 [profile.release]
 codegen-units = 1

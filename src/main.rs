@@ -73,7 +73,7 @@ impl App {
 		let result: Database = database::database(conn_str).await?;
 		let db: Arc<Database> = Arc::new(result);
 
-		let auth_route: Router<_> = auth_route::auth_api((*db).clone()).await;
+		let auth_route: Router<_> = auth_route::auth_api().await;
 		let api_route: Router<_> = api_route::user_api((*db).clone()).await;
 
 		Ok((auth_route, api_route))

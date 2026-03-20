@@ -15,3 +15,29 @@
  */
 
 pub(crate) mod auth;
+
+#[cfg(test)]
+mod tests {
+	use super::auth::create::CreateStruct;
+	use super::auth::login::LoginStruct;
+	use uuid::Uuid;
+
+	#[test]
+	fn api_auth_builders_are_wired() {
+		let uuid = Uuid::new_v4();
+
+		let _create = CreateStruct::builder()
+			.uuid(uuid)
+			.username("tester")
+			.password("secret")
+			.build();
+
+		let login = LoginStruct::builder()
+			.uuid(uuid)
+			.password(String::from("secret"))
+			.build();
+
+		assert_eq!(login.uuid, uuid);
+		assert_eq!(login.password, "secret");
+	}
+}

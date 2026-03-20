@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
+use std::str::FromStr;
+
+use log::{error, warn};
+
+use crate::api::auth::create::CreateStruct;
 use crate::api::auth::login::LoginStruct;
-use crate::database::Database;
-use crate::entity::accounts::ActiveModel;
 use crate::keyring_service::KeyringService;
 use axum::Router;
 use axum::body::Body;
-use axum::extract::Path;
+use axum::extract::{Path, Query};
 use axum::http::StatusCode;
 use axum::response::Response;
 use axum::routing::get;
@@ -28,98 +31,116 @@ use axum_cookie::cookie::Cookie;
 use axum_cookie::{CookieLayer, CookieManager};
 use base64::engine::general_purpose;
 use base64::{Engine, alphabet, engine};
-use log::warn;
-use sea_orm::{ActiveModelTrait, Set};
-use std::result::Result::Err;
-use std::sync::Arc;
+use jsonwebtoken::errors::Error;
 use uuid::Uuid;
+
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 
 const SESSION_COOKIE_NAME: &str = "AUTH";
 
-pub(crate) async fn auth_api(db: Database) -> Router {
+pub(crate) async fn auth_api() -> Router {
 	Router::new()
 		.route("/signup/{uuid}/{username}/{password}", get(signup))
-		.route("/login/{username}/{password}", get(login))
-		.with_state(Arc::new(db))
+		.route("/login/", get(login))
 		.layer(CookieLayer::default())
 }
 
 async fn signup(
-	axum::extract::State(db): axum::extract::State<Arc<Database>>,
-	Path((uuid_b64, username_b64, password_b64)): Path<(String, String, String)>,
+	manager: CookieManager,
+	username: Query<String>,
+	uuid: Query<String>,
+	password: Query<String>,
 ) -> Response {
-	let Ok(username) = decode_b64_string(&username_b64) else {
-		return response(StatusCode::BAD_REQUEST, "Invalid username encoding.");
+	let keyring_service = KeyringService::new("Lunara");
+
+	// parse queries
+
+	let username_parsed: String = username.0;
+	let password_parsed: String = password.0;
+	let uuid_parsed = match Uuid::from_str(&uuid.0) {
+		Ok(u) => u,
+		Err(_) => return response(StatusCode::BAD_REQUEST, "invalid uuid"),
 	};
 
-	let Ok(password) = decode_b64_string(&password_b64) else {
-		return response(StatusCode::BAD_REQUEST, "Invalid password encoding.");
+	let signup_struct = CreateStruct::builder()
+		.uuid(uuid_parsed)
+		.username(&username_parsed)
+		.password(&password_parsed)
+		.build();
+
+	let signup_result = signup_struct.create_account().await;
+
+	return match signup_result {
+		Ok(result) => response(result, "Done!"),
+		Err(_) => response(StatusCode::BAD_REQUEST, "Unable to create account."),
 	};
 
-	let Ok(uuid) = decode_b64_uuid(&uuid_b64) else {
-		return response(StatusCode::BAD_REQUEST, "Invalid uuid encoding.");
-	};
-
-	let new_account = ActiveModel {
-		uid: Set(uuid),
-		username: Set(username.to_lowercase()),
-		password: Set(password),
-	};
-
-	match new_account.insert(db.conn()).await {
-		Ok(_) => response(StatusCode::CREATED, "Signed up!"),
-		Err(e) => {
-			warn!("Signup failed: {}", e);
-			response(StatusCode::INTERNAL_SERVER_ERROR, "Signup failed.")
-		}
-	}
+	//todo: make the fucking shit work.
 }
 
-async fn login(
-	manager: CookieManager,
-	Path((uuid_b64, password_b64)): Path<(String, String)>,
-) -> Response {
-	let Ok(password) = decode_b64_string(&password_b64) else {
-		return response(StatusCode::BAD_REQUEST, "Invalid password encoding.");
-	};
+/// Creates a jwt token based on url-provided credentials (queries)
+/// Additionally, the function will check inside KeyringService and attempt to login using a jwt token
+/// Take further notice that queries must be base64 encoded
+async fn login(manager: CookieManager, uuid: Query<String>, password: Query<String>) -> Response {
+	let cookie = manager.get(SESSION_COOKIE_NAME).unwrap();
+	let keyring_service = KeyringService::new("Lunara");
 
-	let Ok(uuid) = decode_b64_uuid(&uuid_b64) else {
-		return response(StatusCode::BAD_REQUEST, "Invalid uuid encoding.");
-	};
+	let key: &[u8] = &keyring_service
+		.get_secret("key")
+		.await
+		.unwrap()
+		.into_bytes();
 
-	let service = KeyringService::new("Lunara");
+	if let Ok(jwt_res) = validate_jwt(key, cookie.value()) {
+		let login_result = jwt_res.login().await;
 
-	// check session cookie.
-
-	if let Some(auth_cookie) = manager.get(SESSION_COOKIE_NAME) {
-		if let Ok(session) = service.get_secret(SESSION_COOKIE_NAME).await {
-			//todo: allow w/ session cookie
-		}
+		return login_result.unwrap_or_default().0;
 	}
 
-	let credentials = LoginStruct { uuid, password };
+	let uuid_parsed = match Uuid::from_str(&uuid.0) {
+		Ok(u) => u,
+		Err(_) => return response(StatusCode::BAD_REQUEST, "invalid uuid"),
+	};
+
+	let credentials = LoginStruct::builder()
+		.uuid(uuid_parsed)
+		.password(password.0)
+		.build();
+
 	let login_result = credentials.login().await;
 
-	if let Ok(login) = login_result {
-		let cookie_id = Uuid::new_v4();
+	return match login_result {
+		Ok(result) => {
+			return result.0;
+		}
 
-		save_cookie(manager, SESSION_COOKIE_NAME, &String::from(cookie_id)).await;
-		service
-			.set_secret(
-				String::from(Uuid::new_v4()).as_str(),
-				String::from(cookie_id).as_str(),
-			)
-			.await
-			.unwrap();
+		Err(error) => {
+			error!("Error while using credential login. {}", error);
+			warn!("Maybe you didn't use the right password?");
 
-		return login;
-	}
-
-	response(StatusCode::ACCEPTED, "Failed to login")
+			response(StatusCode::BAD_REQUEST, "Failed to login")
+		}
+	};
 }
 
-/// Used for storing session Cookies.
-async fn save_cookie<S: Into<String>>(manager: CookieManager, name: S, value: S) {
+// Util
+fn generate_jwt(login: &LoginStruct, key: &[u8]) -> Result<String, Error> {
+	let header = Header::new(Algorithm::HS256);
+	let encoding_key = EncodingKey::from_secret(key);
+
+	encode(&header, &login, &encoding_key)
+}
+
+fn validate_jwt(key: &[u8], token: &str) -> Result<LoginStruct, Error> {
+	let decoding_key = DecodingKey::from_secret(key);
+	let mut validation = Validation::new(Algorithm::HS256);
+	validation.required_spec_claims.clear();
+	validation.validate_exp = false;
+
+	decode::<LoginStruct>(token, &decoding_key, &validation).map(|data| data.claims)
+}
+
+fn save_cookie<S: Into<String>>(manager: CookieManager, name: S, value: S) {
 	let cookie = Cookie::new(name.into(), value.into());
 
 	manager.add(cookie);
@@ -130,22 +151,6 @@ fn response(status: StatusCode, msg: &'static str) -> Response {
 		.status(status)
 		.body(Body::from(msg))
 		.unwrap_or_else(|_| Response::new(Body::from(msg)))
-}
-
-fn decode_b64(input: &str) -> Result<Vec<u8>, ()> {
-	engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD)
-		.decode(input)
-		.map_err(|_| ())
-}
-
-fn decode_b64_string(input: &str) -> Result<String, ()> {
-	let bytes = decode_b64(input)?;
-	String::from_utf8(bytes).map_err(|_| ())
-}
-
-fn decode_b64_uuid(input: &str) -> Result<Uuid, ()> {
-	let s = decode_b64_string(input)?;
-	Uuid::parse_str(&s).map_err(|_| ())
 }
 
 #[cfg(test)]
@@ -192,75 +197,93 @@ mod tests {
 
 	#[tokio::test]
 	async fn auth_api_router_has_signup_route() {
-		let db = mock_database().await;
+		let app = auth_api().await;
+		let uuid = encode_base64(&Uuid::new_v4().to_string());
+		let username = encode_base64("testuser");
+		let password = encode_base64("testpass");
 
-		if let Some(db) = db {
-			let app = auth_api(db).await;
-			let uuid = encode_base64(&Uuid::new_v4().to_string());
-			let username = encode_base64("testuser");
-			let password = encode_base64("testpass");
+		let response: Response = app
+			.oneshot(
+				Request::builder()
+					.method("POST")
+					.uri(format!(
+						"/signup/placeholder/placeholder/placeholder?uuid={}&username={}&password={}",
+						uuid, username, password
+					))
+					.body(Body::empty())
+					.unwrap(),
+			)
+			.await
+			.unwrap();
 
-			let response: Response = app
-				.oneshot(
-					Request::builder()
-						.uri(format!("/signup/{}/{}/{}", uuid, username, password))
-						.body(Body::empty())
-						.unwrap(),
-				)
-				.await
-				.unwrap();
-
-			assert_ne!(response.status(), StatusCode::NOT_FOUND);
-		}
+		assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
 	}
 
 	#[tokio::test]
 	async fn auth_api_router_has_login_route() {
-		let db = mock_database().await;
+		let app = auth_api().await;
+		let username = encode_base64(&Uuid::new_v4().to_string());
+		let password = encode_base64("testpass");
 
-		if let Some(db) = db {
-			let app = auth_api(db).await;
-			let username = encode_base64(&Uuid::new_v4().to_string());
-			let password = encode_base64("testpass");
+		let response: Response = app
+			.oneshot(
+				Request::builder()
+					.method("POST")
+					.uri(format!("/login/?uuid={}&password={}", username, password))
+					.body(Body::empty())
+					.unwrap(),
+			)
+			.await
+			.unwrap();
 
-			let response: Response = app
-				.oneshot(
-					Request::builder()
-						.uri(format!("/login/{}/{}", username, password))
-						.body(Body::empty())
-						.unwrap(),
-				)
-				.await
-				.unwrap();
-
-			assert_ne!(response.status(), StatusCode::NOT_FOUND);
-		}
+		assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
 	}
 
 	#[tokio::test]
 	async fn auth_api_returns_404_for_unknown_route() {
-		let db = mock_database().await;
+		let app = auth_api().await;
 
-		if let Some(db) = db {
-			let app = auth_api(db).await;
+		let response: Response = app
+			.oneshot(
+				Request::builder()
+					.uri("/nonexistent")
+					.body(Body::empty())
+					.unwrap(),
+			)
+			.await
+			.unwrap();
 
-			let response: Response = app
-				.oneshot(
-					Request::builder()
-						.uri("/nonexistent")
-						.body(Body::empty())
-						.unwrap(),
-				)
-				.await
-				.unwrap();
-
-			assert_eq!(response.status(), StatusCode::NOT_FOUND);
-		}
+		assert_eq!(response.status(), StatusCode::NOT_FOUND);
 	}
 
-	async fn mock_database() -> Option<Database> {
-		Database::connect("postgres://postgres:postgres@localhost:5432/lunara")
-			.await
-			.ok()
+	#[test]
+	fn test_jwt_roundtrip() {
+		let uuid = Uuid::new_v4();
+		let password = "password123".to_string();
+		let login = LoginStruct::builder()
+			.uuid(uuid)
+			.password(password.clone())
+			.build();
+		let key = b"secret_key";
+
+		let token = generate_jwt(&login, key).expect("Failed to generate JWT");
+		let decoded = validate_jwt(key, &token).expect("Failed to validate JWT");
+
+		assert_eq!(decoded.uuid, uuid);
+		assert_eq!(decoded.password, password);
+	}
+
+	#[test]
+	fn test_jwt_invalid_signature() {
+		let uuid = Uuid::new_v4();
+		let password = "password123".to_string();
+		let login = LoginStruct::builder().uuid(uuid).password(password).build();
+		let key = b"secret_key";
+		let wrong_key = b"wrong_key";
+
+		let token = generate_jwt(&login, key).expect("Failed to generate JWT");
+		let result = validate_jwt(wrong_key, &token);
+
+		assert!(result.is_err());
 	}
 }
