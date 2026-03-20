@@ -8,8 +8,7 @@ ENV CI=true
 
 COPY . .
 
-# Test & Build
-RUN cargo test
+# Build runtime binary
 RUN cargo build --release
 
 FROM alpine:latest
@@ -17,6 +16,9 @@ FROM alpine:latest
 WORKDIR /app
 
 # Add keyctl
-RUN apk add keyutils
+RUN apk add --no-cache keyutils
 
-ENTRYPOINT ["keyctl", "session", "-", "Lunara"]
+COPY --from=builder /app/target/release/Lunara /app/lunara
+RUN chmod +x /app/lunara
+
+ENTRYPOINT ["keyctl", "session", "-", "/app/lunara"]

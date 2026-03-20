@@ -27,7 +27,7 @@ impl Database {
 
 		match db_conn {
 			Ok(_) => {
-				info!("Address fond!")
+				info!("Address found!")
 			}
 			Err(_) => {
 				warn!("Database hasn't started yet or doesn't exist.")

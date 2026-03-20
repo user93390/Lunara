@@ -17,7 +17,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::AuthApi;
-use crate::entity::accounts::{self, Column, Entity};
+use crate::entity::accounts::{Column, Entity};
 use axum::{body::Body, http::StatusCode, response::Response};
 use log::{info, warn};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};

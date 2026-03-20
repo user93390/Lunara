@@ -23,14 +23,12 @@ use crate::api::auth::login::LoginStruct;
 use crate::keyring_service::KeyringService;
 use axum::Router;
 use axum::body::Body;
-use axum::extract::{Path, Query};
+use axum::extract::Query;
 use axum::http::StatusCode;
 use axum::response::Response;
 use axum::routing::get;
 use axum_cookie::cookie::Cookie;
 use axum_cookie::{CookieLayer, CookieManager};
-use base64::engine::general_purpose;
-use base64::{Engine, alphabet, engine};
 use jsonwebtoken::errors::Error;
 use uuid::Uuid;
 
@@ -70,12 +68,12 @@ async fn signup(
 
 	let signup_result = signup_struct.create_account().await;
 
-	return match signup_result {
+	match signup_result {
 		Ok(result) => response(result, "Done!"),
 		Err(_) => response(StatusCode::BAD_REQUEST, "Unable to create account."),
-	};
+	}
 
-	//todo: make the fucking shit work.
+	//todo: make it fucking work
 }
 
 /// Creates a jwt token based on url-provided credentials (queries)
@@ -109,18 +107,15 @@ async fn login(manager: CookieManager, uuid: Query<String>, password: Query<Stri
 
 	let login_result = credentials.login().await;
 
-	return match login_result {
-		Ok(result) => {
-			return result.0;
-		}
-
+	match login_result {
+		Ok(result) => result.0,
 		Err(error) => {
 			error!("Error while using credential login. {}", error);
 			warn!("Maybe you didn't use the right password?");
 
 			response(StatusCode::BAD_REQUEST, "Failed to login")
 		}
-	};
+	}
 }
 
 // Util
