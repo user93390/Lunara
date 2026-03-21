@@ -2,13 +2,19 @@ use super::AuthApi;
 use crate::Database;
 use crate::entity::accounts::ActiveModel;
 use axum::http::StatusCode;
-use std::error::Error;
+use base64::{
+	Engine, alphabet,
+	engine::{GeneralPurpose, GeneralPurposeConfig, general_purpose},
+};
+use serde::{Deserialize, Serialize};
+use std::{error::Error, str::FromStr};
 use uuid::Uuid;
 
 use sea_orm::{ActiveModelTrait, Set};
 
 // lifetime for password & username
 // we can keep borrowing it unlike String where we'd have to clone it.
+#[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct CreateStruct<'a> {
 	uuid: Uuid,
 	username: &'a str,
@@ -21,12 +27,18 @@ impl<'a> CreateStruct<'a> {
 	pub fn builder() -> CreateStructBuilder<'a> {
 		CreateStructBuilder::default()
 	}
-	pub async fn create_account(&self) -> Result<StatusCode, Box<dyn Error + Sync + Send>> {
+
+	// Requires all credentials to be base64 encoded.
+	pub async fn create_account(
+		&self,
+	) -> Result<(StatusCode, &Self), Box<dyn Error + Sync + Send>> {
 		let database: Database = self.get_database().await?;
 
-		let uuid = self.uuid;
-		let username = self.username;
-		let password = self.password;
+		let uuid_str = Self::decode(self.uuid)?;
+		let username = Self::decode(self.username)?;
+		let password = Self::decode(self.password)?;
+
+		let uuid = Uuid::parse_str(uuid_str.as_str())?;
 
 		let new_account = ActiveModel {
 			uid: Set(uuid),
@@ -36,7 +48,15 @@ impl<'a> CreateStruct<'a> {
 
 		new_account.insert(database.conn()).await?;
 
-		Ok(StatusCode::CREATED)
+		let tuple = (StatusCode::CREATED, self);
+		Ok(tuple)
+	}
+
+	pub fn decode<S: AsRef<[u8]>>(encoded: S) -> Result<String, Box<dyn Error + Sync + Send>> {
+		let decoded_bytes =
+			GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD).decode(encoded)?;
+
+		Ok(String::from_utf8(decoded_bytes)?)
 	}
 }
 

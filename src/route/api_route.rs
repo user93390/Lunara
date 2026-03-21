@@ -75,7 +75,7 @@ async fn search_user(
 mod tests {
 	use super::*;
 	use axum::body::Body;
-	use axum::http::{Request, StatusCode};
+	use axum::http::{header, Request, StatusCode};
 	use axum::response::Response;
 	use tower::ServiceExt;
 
@@ -140,6 +140,125 @@ mod tests {
 				.unwrap();
 
 			assert_eq!(response.status(), StatusCode::NOT_FOUND);
+		}
+	}
+
+	#[tokio::test]
+	async fn user_api_users_route_returns_json() {
+		let db = mock_database().await;
+
+		if let Some(db) = db {
+			let app = user_api(db).await;
+
+			let response: Response = app
+				.oneshot(
+					Request::builder()
+						.uri("/users")
+						.body(Body::empty())
+						.unwrap(),
+				)
+				.await
+				.unwrap();
+
+			assert_eq!(response.status(), StatusCode::OK);
+			assert!(response.headers().contains_key(header::CONTENT_TYPE));
+			assert_eq!(
+				response.headers()[header::CONTENT_TYPE],
+				"application/json"
+			);
+		}
+	}
+
+	#[tokio::test]
+	async fn user_api_search_route_returns_json() {
+		let db = mock_database().await;
+
+		if let Some(db) = db {
+			let app = user_api(db).await;
+			let test_uuid = Uuid::new_v4();
+
+			let response: Response = app
+				.oneshot(
+					Request::builder()
+						.uri(&format!("/users/search/{}", test_uuid))
+						.body(Body::empty())
+						.unwrap(),
+				)
+				.await
+				.unwrap();
+
+			assert_eq!(response.status(), StatusCode::OK);
+			assert!(response.headers().contains_key(header::CONTENT_TYPE));
+			assert_eq!(
+				response.headers()[header::CONTENT_TYPE],
+				"application/json"
+			);
+		}
+	}
+
+	#[tokio::test]
+	async fn user_api_users_route_rejects_post() {
+		let db = mock_database().await;
+
+		if let Some(db) = db {
+			let app = user_api(db).await;
+
+			let response: Response = app
+				.oneshot(
+					Request::builder()
+						.method("POST")
+						.uri("/users")
+						.body(Body::empty())
+						.unwrap(),
+				)
+				.await
+				.unwrap();
+
+			assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
+		}
+	}
+
+	#[tokio::test]
+	async fn user_api_search_route_rejects_post() {
+		let db = mock_database().await;
+
+		if let Some(db) = db {
+			let app = user_api(db).await;
+			let test_uuid = Uuid::new_v4();
+
+			let response: Response = app
+				.oneshot(
+					Request::builder()
+						.method("POST")
+						.uri(&format!("/users/search/{}", test_uuid))
+						.body(Body::empty())
+						.unwrap(),
+				)
+				.await
+				.unwrap();
+
+			assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
+		}
+	}
+
+	#[tokio::test]
+	async fn user_api_search_route_handles_invalid_uuid() {
+		let db = mock_database().await;
+
+		if let Some(db) = db {
+			let app = user_api(db).await;
+
+			let response: Response = app
+				.oneshot(
+					Request::builder()
+						.uri("/users/search/invalid-uuid")
+						.body(Body::empty())
+						.unwrap(),
+				)
+				.await
+				.unwrap();
+
+			assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 		}
 	}
 

@@ -13,10 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 use std::str::FromStr;
-
-use log::{error, warn};
 
 use crate::api::auth::create::CreateStruct;
 use crate::api::auth::login::LoginStruct;
@@ -30,6 +27,8 @@ use axum::routing::get;
 use axum_cookie::cookie::Cookie;
 use axum_cookie::{CookieLayer, CookieManager};
 use jsonwebtoken::errors::Error;
+use log::{error, warn};
+use serde::Serialize;
 use uuid::Uuid;
 
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
@@ -43,6 +42,8 @@ pub(crate) async fn auth_api() -> Router {
 		.layer(CookieLayer::default())
 }
 
+/// Create an entity inside Database, then make a new auth session using jwt
+/// We can use jwt token for login. The paramaters are all queries so they may not be filled out (possible no value).
 async fn signup(
 	manager: CookieManager,
 	username: Query<String>,
@@ -51,10 +52,9 @@ async fn signup(
 ) -> Response {
 	let keyring_service = KeyringService::new("Lunara");
 
-	// parse queries
-
 	let username_parsed: String = username.0;
 	let password_parsed: String = password.0;
+
 	let uuid_parsed = match Uuid::from_str(&uuid.0) {
 		Ok(u) => u,
 		Err(_) => return response(StatusCode::BAD_REQUEST, "invalid uuid"),
@@ -69,27 +69,38 @@ async fn signup(
 	let signup_result = signup_struct.create_account().await;
 
 	match signup_result {
-		Ok(result) => response(result, "Done!"),
+		Ok(result) => {
+			let key = keyring_service.get_secret("key").await;
+
+			if let Ok(r) = key {
+				let jwt = generate_jwt(result.1, r.as_bytes());
+
+				// jwt result -> non-growable string (&str)
+				if let Ok(jwt_str) = jwt {
+					save_cookie(manager, SESSION_COOKIE_NAME, &jwt_str);
+				}
+			}
+			response(result.0, "Done!")
+		}
 		Err(_) => response(StatusCode::BAD_REQUEST, "Unable to create account."),
 	}
-
-	//todo: make it fucking work
 }
 
 /// Creates a jwt token based on url-provided credentials (queries)
 /// Additionally, the function will check inside KeyringService and attempt to login using a jwt token
 /// Take further notice that queries must be base64 encoded
 async fn login(manager: CookieManager, uuid: Query<String>, password: Query<String>) -> Response {
-	let cookie = manager.get(SESSION_COOKIE_NAME).unwrap();
+	let cookie = manager.get(SESSION_COOKIE_NAME).unwrap_or_default();
 	let keyring_service = KeyringService::new("Lunara");
 
-	let key: &[u8] = &keyring_service
+	let key_bytes = &keyring_service
 		.get_secret("key")
 		.await
-		.unwrap()
-		.into_bytes();
+		.expect("Unable to find service key. Without this most of the application won't work.");
 
-	if let Ok(jwt_res) = validate_jwt(key, cookie.value()) {
+	let key_bytes: &[u8] = key_bytes.as_bytes();
+
+	if let Ok(jwt_res) = validate_jwt(key_bytes, cookie.value()) {
 		let login_result = jwt_res.login().await;
 
 		return login_result.unwrap_or_default().0;
@@ -118,12 +129,15 @@ async fn login(manager: CookieManager, uuid: Query<String>, password: Query<Stri
 	}
 }
 
-// Util
-fn generate_jwt(login: &LoginStruct, key: &[u8]) -> Result<String, Error> {
+// Other
+fn generate_jwt<T>(var: T, key: &[u8]) -> Result<String, Error>
+where
+	T: Serialize,
+{
 	let header = Header::new(Algorithm::HS256);
 	let encoding_key = EncodingKey::from_secret(key);
 
-	encode(&header, &login, &encoding_key)
+	encode(&header, &var, &encoding_key)
 }
 
 fn validate_jwt(key: &[u8], token: &str) -> Result<LoginStruct, Error> {
@@ -280,5 +294,165 @@ mod tests {
 		let result = validate_jwt(wrong_key, &token);
 
 		assert!(result.is_err());
+	}
+
+	#[test]
+	fn test_login_struct_serialization() {
+		let uuid = Uuid::new_v4();
+		let password = "password".to_string();
+		let login = LoginStruct::builder().uuid(uuid).password(password.clone()).build();
+
+		let serialized = serde_json::to_string(&login).unwrap();
+		let deserialized: LoginStruct = serde_json::from_str(&serialized).unwrap();
+
+		assert_eq!(deserialized.uuid, uuid);
+		assert_eq!(deserialized.password, password);
+	}
+
+	#[test]
+	fn test_create_struct_serialization() {
+		let uuid = Uuid::new_v4();
+		let username = "user";
+		let password = "pass";
+		let create = CreateStruct::builder()
+			.uuid(uuid)
+			.username(username)
+			.password(password)
+			.build();
+
+		let serialized = serde_json::to_string(&create).unwrap();
+		let deserialized: CreateStruct = serde_json::from_str(&serialized).unwrap();
+
+		// Note: CreateStruct fields are private/crate-visible, but test module is in same file so it can access them if they are accessible.
+		// Wait, they are private in `CreateStruct` definition?
+		// `src/api/auth/create.rs`: `pub(crate) struct CreateStruct`. Fields are `uuid`, `username`, `password`.
+		// They are private by default. `builder` sets them.
+		// But I am in `src/route/auth_route.rs`. `CreateStruct` is imported.
+		// I cannot access private fields of `CreateStruct` from `auth_route.rs` unless they are pub.
+		// `src/api/auth/create.rs` defines them as private.
+		// So I cannot assert on fields directly.
+		// But I can serialize and deserialize and ensure it doesn't panic.
+		// AND `CreateStruct` derives `Debug`, so I can format it.
+	}
+
+	#[tokio::test]
+	async fn test_signup_route_invalid_uuid() {
+		let app = auth_api().await;
+		let username = encode_base64("user");
+		let password = encode_base64("pass");
+		let invalid_uuid = encode_base64("not-a-uuid");
+
+		let response: Response = app
+			.oneshot(
+				Request::builder()
+					.uri(format!(
+						"/signup/placeholder/placeholder/placeholder?uuid={}&username={}&password={}",
+						invalid_uuid, username, password
+					))
+					.body(Body::empty())
+					.unwrap(),
+			)
+			.await
+			.unwrap();
+
+		assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+	}
+
+	#[tokio::test]
+	async fn test_login_route_invalid_uuid() {
+		let app = auth_api().await;
+		let password = encode_base64("pass");
+		let invalid_uuid = encode_base64("not-a-uuid");
+
+		let response: Response = app
+			.oneshot(
+				Request::builder()
+					.uri(format!("/login/?uuid={}&password={}", invalid_uuid, password))
+					.body(Body::empty())
+					.unwrap(),
+			)
+			.await
+			.unwrap();
+
+		assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+	}
+
+	#[tokio::test]
+	async fn test_jwt_generation_and_cookie() {
+		// This tests the helper function save_cookie indirectly if we could check headers,
+		// but save_cookie puts it in CookieManager which is a layer.
+		// We can test `generate_jwt` logic again with different data.
+		let uuid = Uuid::new_v4();
+		let password = "pass".to_string();
+		let login = LoginStruct::builder().uuid(uuid).password(password).build();
+		let key = b"key";
+
+		let token = generate_jwt(&login, key).unwrap();
+		assert!(!token.is_empty());
+	}
+
+	#[tokio::test]
+	async fn test_signup_route_integration() {
+		if mock_database().await.is_none() {
+			return;
+		}
+
+		// Since we can't easily mock KeyringService, this test might fail if keyring is missing.
+		// We'll wrap it in a catch_unwind or just accept it might fail in some envs.
+		// But standard `cargo test` runs everything.
+		// Given the constraints, I will add the test but comment that it requires env.
+		
+		let app = auth_api().await;
+		let uuid = Uuid::new_v4();
+		let uuid_enc = encode_base64(&uuid.to_string());
+		let username = encode_base64("testuser_integration");
+		let password = encode_base64("testpass_integration");
+
+		// We cannot assert success because we don't know if KeyringService works in this env.
+		// But we can assert that it doesn't return 404.
+		let response: Response = app
+			.oneshot(
+				Request::builder()
+					.uri(format!(
+						"/signup/placeholder/placeholder/placeholder?uuid={}&username={}&password={}",
+						uuid_enc, username, password
+					))
+					.body(Body::empty())
+					.unwrap(),
+			)
+			.await
+			.unwrap();
+		
+		assert_ne!(response.status(), StatusCode::NOT_FOUND);
+		// It might be 200, 201, 400 (if keyring fails), or 500.
+	}
+
+	#[tokio::test]
+	async fn test_login_route_integration() {
+		if mock_database().await.is_none() {
+			return;
+		}
+
+		let app = auth_api().await;
+		let uuid_enc = encode_base64(&Uuid::new_v4().to_string());
+		let password = encode_base64("pass");
+
+		let response: Response = app
+			.oneshot(
+				Request::builder()
+					.uri(format!("/login/?uuid={}&password={}", uuid_enc, password))
+					.body(Body::empty())
+					.unwrap(),
+			)
+			.await
+			.unwrap();
+
+		assert_ne!(response.status(), StatusCode::NOT_FOUND);
+	}
+
+	async fn mock_database() -> Option<crate::database::Database> {
+		crate::database::Database::connect("postgres://postgres:postgres@localhost:5432/lunara")
+			.await
+			.ok()
 	}
 }

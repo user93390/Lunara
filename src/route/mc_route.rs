@@ -390,4 +390,89 @@ mod tests {
 
 		assert_ne!(response.status(), StatusCode::NOT_FOUND);
 	}
+
+	#[tokio::test]
+	async fn mc_route_has_server_start_route() {
+		let app = mc_route();
+
+		let response: Response = app
+			.oneshot(
+				Request::builder()
+					.uri("/server/start/testserver")
+					.body(Body::empty())
+					.unwrap(),
+			)
+			.await
+			.unwrap();
+
+		assert_ne!(response.status(), StatusCode::NOT_FOUND);
+	}
+
+	#[tokio::test]
+	async fn mc_route_has_server_delete_route() {
+		let app = mc_route();
+
+		let response: Response = app
+			.oneshot(
+				Request::builder()
+					.uri("/server/testserver/delete")
+					.body(Body::empty())
+					.unwrap(),
+			)
+			.await
+			.unwrap();
+
+		assert_ne!(response.status(), StatusCode::NOT_FOUND);
+	}
+
+	#[tokio::test]
+	async fn mc_route_has_plugin_list_route() {
+		let app = mc_route();
+
+		let response: Response = app
+			.oneshot(
+				Request::builder()
+					.uri("/server/testserver/plugin/list")
+					.body(Body::empty())
+					.unwrap(),
+			)
+			.await
+			.unwrap();
+
+		assert_ne!(response.status(), StatusCode::NOT_FOUND);
+	}
+
+	#[tokio::test]
+	async fn mc_route_has_server_logs_route() {
+		let app = mc_route();
+
+		let response: Response = app
+			.oneshot(
+				Request::builder()
+					.uri("/server/testserver/logs?distance=10")
+					.body(Body::empty())
+					.unwrap(),
+			)
+			.await
+			.unwrap();
+
+		assert_ne!(response.status(), StatusCode::NOT_FOUND);
+	}
+
+	#[tokio::test]
+	async fn mc_route_has_plugin_versions_route() {
+		let app = mc_route();
+
+		let response: Response = app
+			.oneshot(
+				Request::builder()
+					.uri("/plugin/versions/testplugin")
+					.body(Body::empty())
+					.unwrap(),
+			)
+			.await
+			.unwrap();
+
+		assert_ne!(response.status(), StatusCode::NOT_FOUND);
+	}
 }

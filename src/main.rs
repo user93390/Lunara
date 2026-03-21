@@ -231,5 +231,3 @@ fn conv_vec_arr<T, const V: usize>(v: Vec<T>) -> [T; V] {
 	v.try_into()
 		.unwrap_or_else(|_| panic!("Expected vec of length {}", V))
 }
-
-// they losin bud

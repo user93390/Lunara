@@ -24,7 +24,7 @@ use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use std::error::Error;
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct LoginStruct {
 	pub(crate) uuid: Uuid,
 	pub(crate) password: String,
