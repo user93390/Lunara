@@ -29,7 +29,7 @@ use tokio::io::AsyncWriteExt;
 async fn handles_invalid_version_correctly() {
 	let mut builder = MinecraftServer::new();
 
-	builder.with_version(BuildInfo {
+	builder.with_version(crate::mc::server::BuildInfo {
 		version: String::from("None"),
 	});
 
@@ -43,7 +43,7 @@ async fn handles_invalid_version_correctly() {
 async fn handles_invalid_download_dir() {
 	let mut builder = MinecraftServer::new();
 
-	builder.with_version(BuildInfo {
+	builder.with_version(crate::mc::server::BuildInfo {
 		version: String::from("1.21.1"),
 	});
 
