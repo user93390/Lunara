@@ -300,7 +300,10 @@ mod tests {
 	fn test_login_struct_serialization() {
 		let uuid = Uuid::new_v4();
 		let password = "password".to_string();
-		let login = LoginStruct::builder().uuid(uuid).password(password.clone()).build();
+		let login = LoginStruct::builder()
+			.uuid(uuid)
+			.password(password.clone())
+			.build();
 
 		let serialized = serde_json::to_string(&login).unwrap();
 		let deserialized: LoginStruct = serde_json::from_str(&serialized).unwrap();
@@ -367,7 +370,10 @@ mod tests {
 		let response: Response = app
 			.oneshot(
 				Request::builder()
-					.uri(format!("/login/?uuid={}&password={}", invalid_uuid, password))
+					.uri(format!(
+						"/login/?uuid={}&password={}",
+						invalid_uuid, password
+					))
 					.body(Body::empty())
 					.unwrap(),
 			)
@@ -401,7 +407,7 @@ mod tests {
 		// We'll wrap it in a catch_unwind or just accept it might fail in some envs.
 		// But standard `cargo test` runs everything.
 		// Given the constraints, I will add the test but comment that it requires env.
-		
+
 		let app = auth_api().await;
 		let uuid = Uuid::new_v4();
 		let uuid_enc = encode_base64(&uuid.to_string());
@@ -422,7 +428,7 @@ mod tests {
 			)
 			.await
 			.unwrap();
-		
+
 		assert_ne!(response.status(), StatusCode::NOT_FOUND);
 		// It might be 200, 201, 400 (if keyring fails), or 500.
 	}

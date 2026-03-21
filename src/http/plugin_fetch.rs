@@ -110,7 +110,7 @@ trait PluginCreator {
 }
 
 impl PluginCreator for Plugin {
-	async fn get_plugin_by_id(&self, auth: AuthHelper, plugin: Plugin) -> Result<(), PluginError> {
+	async fn get_plugin_by_id(&self, auth: AuthHelper, _plugin: Plugin) -> Result<(), PluginError> {
 		if auth.duration <= 0 {
 			return Err(PluginError::Unauthorized("Auth token expired".to_string()));
 		}

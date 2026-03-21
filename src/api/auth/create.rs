@@ -4,10 +4,10 @@ use crate::entity::accounts::ActiveModel;
 use axum::http::StatusCode;
 use base64::{
 	Engine, alphabet,
-	engine::{GeneralPurpose, GeneralPurposeConfig, general_purpose},
+	engine::{GeneralPurpose, general_purpose},
 };
 use serde::{Deserialize, Serialize};
-use std::{error::Error, str::FromStr};
+use std::error::Error;
 use uuid::Uuid;
 
 use sea_orm::{ActiveModelTrait, Set};

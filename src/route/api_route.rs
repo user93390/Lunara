@@ -75,7 +75,7 @@ async fn search_user(
 mod tests {
 	use super::*;
 	use axum::body::Body;
-	use axum::http::{header, Request, StatusCode};
+	use axum::http::{Request, StatusCode, header};
 	use axum::response::Response;
 	use tower::ServiceExt;
 
@@ -162,10 +162,7 @@ mod tests {
 
 			assert_eq!(response.status(), StatusCode::OK);
 			assert!(response.headers().contains_key(header::CONTENT_TYPE));
-			assert_eq!(
-				response.headers()[header::CONTENT_TYPE],
-				"application/json"
-			);
+			assert_eq!(response.headers()[header::CONTENT_TYPE], "application/json");
 		}
 	}
 
@@ -189,10 +186,7 @@ mod tests {
 
 			assert_eq!(response.status(), StatusCode::OK);
 			assert!(response.headers().contains_key(header::CONTENT_TYPE));
-			assert_eq!(
-				response.headers()[header::CONTENT_TYPE],
-				"application/json"
-			);
+			assert_eq!(response.headers()[header::CONTENT_TYPE], "application/json");
 		}
 	}
 
