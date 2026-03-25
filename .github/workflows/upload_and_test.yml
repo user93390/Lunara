@@ -19,7 +19,7 @@ jobs:
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-nextest,cargo-llvm-cov
-
+          
       - name: Upload Coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
@@ -34,6 +34,5 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: target/nextest/ci/junit.xml
           fail_ci_if_error: true
           report_type: test_results
