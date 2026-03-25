@@ -20,7 +20,14 @@ jobs:
         with:
           tool: cargo-nextest,cargo-llvm-cov
 
-      - name: Run Tests & Generate Reports
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: codecov.json
+          fail_ci_if_error: true
+
+      - name: Run Tests and upload to Codecov
         run: |
           cargo llvm-cov nextest --profile ci --config-file nextest.toml
       - name: Upload to Codecov
@@ -29,3 +36,4 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: target/nextest/ci/junit.xml
           fail_ci_if_error: true
+          report_type: test_results
