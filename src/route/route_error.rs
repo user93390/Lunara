@@ -14,9 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 */
-use crate::route::route_error::RouteError::{InternalError, NotFound};
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use crate::route::route_error::RouteError::{
+	InternalError,
+	NotFound,
+};
+use axum::{
+	http::StatusCode,
+	response::{
+		IntoResponse,
+		Response,
+	},
+};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -26,14 +34,17 @@ pub enum RouteError {
 	#[error("Not found: {0}")]
 	NotFound(String),
 }
+
 impl IntoResponse for RouteError {
 	fn into_response(self) -> Response {
 		match self {
-			InternalError(error) => (
-				StatusCode::INTERNAL_SERVER_ERROR,
-				format!("Internal route error: {}", error),
-			)
-				.into_response(),
+			InternalError(error) => {
+				(
+					StatusCode::INTERNAL_SERVER_ERROR,
+					format!("Internal route error: {}", error),
+				)
+					.into_response()
+			}
 			NotFound(error) => {
 				(StatusCode::NOT_FOUND, format!("Not found: {}", error)).into_response()
 			}

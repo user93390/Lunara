@@ -14,24 +14,61 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-use crate::http::plugin_fetch::{TrendingPlugin, fetch_plugin_versions, fetch_trending_plugins};
-use crate::http::server_creator::ServerCreator;
-use crate::mc::plugin::Plugin;
-use crate::mc::server::ServerBrand::Vanilla;
-use crate::mc::server::{BuildInfo, MinecraftServer, ServerBrand};
-use crate::route::route_error::RouteError;
-use crate::route::route_error::RouteError::{InternalError, NotFound};
-use axum::Json;
-use axum::Router;
-use axum::extract::{Path, Query};
-use axum::http::StatusCode;
-use axum::routing::get;
+use crate::{
+	http::{
+		plugin_fetch::{
+			TrendingPlugin,
+			fetch_plugin_versions,
+			fetch_trending_plugins,
+		},
+		server_creator::ServerCreator,
+	},
+	mc::{
+		plugin::Plugin,
+		server::{
+			BuildInfo,
+			MinecraftServer,
+			ServerBrand,
+			ServerBrand::Vanilla,
+		},
+	},
+	route::route_error::{
+		RouteError,
+		RouteError::{
+			InternalError,
+			NotFound,
+		},
+	},
+};
+use axum::{
+	Json,
+	Router,
+	extract::{
+		Path,
+		Query,
+	},
+	http::StatusCode,
+	routing::get,
+};
 use core::str::from_utf8;
-use log::{debug, error, info, warn};
+use log::{
+	debug,
+	error,
+	info,
+	warn,
+};
 use reqwest::Client;
 use serde::Deserialize;
-use tokio::fs::{File, create_dir_all};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::{
+	fs::{
+		File,
+		create_dir_all,
+	},
+	io::{
+		AsyncReadExt,
+		AsyncWriteExt,
+	},
+};
 
 const CONF_LOCATION: &str = "servers.json";
 
@@ -301,9 +338,14 @@ async fn delete_server(Path(server_name): Path<String>) -> Result<(), RouteError
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use axum::body::Body;
-	use axum::http::{Request, StatusCode};
-	use axum::response::Response;
+	use axum::{
+		body::Body,
+		http::{
+			Request,
+			StatusCode,
+		},
+		response::Response,
+	};
 	use tower::ServiceExt;
 
 	#[tokio::test]

@@ -1,16 +1,36 @@
+/*
+ * Copyright 2025 seasnail1
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 use super::AuthApi;
-use crate::Database;
-use crate::entity::accounts::ActiveModel;
-use axum::http::StatusCode;
-use base64::{
-	Engine, alphabet,
-	engine::{GeneralPurpose, general_purpose},
+use crate::{
+	Database,
+	entity::accounts::ActiveModel,
 };
-use serde::{Deserialize, Serialize};
+use axum::http::StatusCode;
+use serde::{
+	Deserialize,
+	Serialize,
+};
 use std::error::Error;
 use uuid::Uuid;
 
-use sea_orm::{ActiveModelTrait, Set};
+use sea_orm::{
+	ActiveModelTrait,
+	Set,
+};
 
 // lifetime for password & username
 // we can keep borrowing it unlike String where we'd have to clone it.
@@ -34,29 +54,16 @@ impl<'a> CreateStruct<'a> {
 	) -> Result<(StatusCode, &Self), Box<dyn Error + Sync + Send>> {
 		let database: Database = self.get_database().await?;
 
-		let uuid_str = Self::decode(self.uuid)?;
-		let username = Self::decode(self.username)?;
-		let password = Self::decode(self.password)?;
-
-		let uuid = Uuid::parse_str(uuid_str.as_str())?;
-
 		let new_account = ActiveModel {
-			uid: Set(uuid),
-			username: Set(username.to_lowercase()),
-			password: Set(password.to_string()),
+			uid: Set(self.uuid),
+			username: Set(self.username.to_lowercase()),
+			password: Set(self.password.to_string()),
 		};
 
 		new_account.insert(database.conn()).await?;
 
 		let tuple = (StatusCode::CREATED, self);
 		Ok(tuple)
-	}
-
-	pub fn decode<S: AsRef<[u8]>>(encoded: S) -> Result<String, Box<dyn Error + Sync + Send>> {
-		let decoded_bytes =
-			GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD).decode(encoded)?;
-
-		Ok(String::from_utf8(decoded_bytes)?)
 	}
 }
 
@@ -95,7 +102,10 @@ impl<'a> CreateStructBuilder<'a> {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use std::panic::{AssertUnwindSafe, catch_unwind};
+	use std::panic::{
+		AssertUnwindSafe,
+		catch_unwind,
+	};
 
 	#[test]
 	fn builder_creates_struct_with_expected_values() {

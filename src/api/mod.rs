@@ -18,8 +18,10 @@ pub(crate) mod auth;
 
 #[cfg(test)]
 mod tests {
-	use super::auth::create::CreateStruct;
-	use super::auth::login::LoginStruct;
+	use super::auth::{
+		create::CreateStruct,
+		login::LoginStruct,
+	};
 	use uuid::Uuid;
 
 	#[test]

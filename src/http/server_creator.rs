@@ -14,16 +14,31 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 */
-use crate::mc::server::{MinecraftServer, ServerBrand};
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use crate::mc::server::{
+	MinecraftServer,
+	ServerBrand,
+};
+use axum::{
+	http::StatusCode,
+	response::{
+		IntoResponse,
+		Response,
+	},
+};
 use reqwest::Client;
 use serde_json::Value;
-use std::io::Error;
-use std::path::{Path, PathBuf};
+use std::{
+	io::Error,
+	path::{
+		Path,
+		PathBuf,
+	},
+};
 use thiserror::Error;
-use tokio::fs;
-use tokio::io::AsyncWriteExt;
+use tokio::{
+	fs,
+	io::AsyncWriteExt,
+};
 
 #[tokio::test]
 async fn handles_invalid_version_correctly() {

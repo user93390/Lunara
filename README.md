@@ -40,11 +40,10 @@
 # Compiling
 >  You must have
 >  - git
->  - cargo
->  - rust
->  - make
->  - bun
->  - Configured ssh with git
+>  - rust / cargo
+>  - gnumake (regular make)
+>  - Configured ssh
+>  - gcc for linker
 
 <p>Open your terminal of choice and enter:</p>
 
@@ -61,10 +60,10 @@ cargo build
 <p> Build docker by using make with the following:</p>
 
 ```bash
-make dock_init
+$ make dock_init
 ```
 <p> Then run the following command to initilize the containers:</p>
 
 ```bash
-make dock_compose
+$ make dock_compose
 ```

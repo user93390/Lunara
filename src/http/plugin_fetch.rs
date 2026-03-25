@@ -16,7 +16,10 @@ limitations under the License.
 */
 use crate::mc::plugin::Plugin;
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
+use serde::{
+	Deserialize,
+	Serialize,
+};
 use thiserror::Error;
 
 const CHUNK_SIZE: usize = 25;

@@ -13,8 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-use log::{info, warn};
-use sea_orm::{Database as SeaDatabase, DatabaseConnection, DbErr};
+use log::{
+	info,
+	warn,
+};
+use sea_orm::{
+	ConnectionTrait,
+	Database as SeaDatabase,
+	DatabaseConnection,
+	DbErr,
+	Statement,
+};
 
 #[derive(Clone)]
 pub struct Database {
@@ -34,11 +43,27 @@ impl Database {
 			}
 		}
 
-		Ok(Self { conn: db_conn? })
+		let db_conn = db_conn?;
+		Self::bootstrap_schema(&db_conn).await?;
+
+		Ok(Self { conn: db_conn })
 	}
 
 	pub fn conn(&self) -> &DatabaseConnection {
 		&self.conn
+	}
+
+	async fn bootstrap_schema(conn: &DatabaseConnection) -> Result<(), DbErr> {
+		let backend = conn.get_database_backend();
+		let create_accounts = Statement::from_string(
+			backend,
+			"CREATE TABLE IF NOT EXISTS accounts (uid UUID PRIMARY KEY, username VARCHAR(255) NOT NULL UNIQUE, password VARCHAR(255) NOT NULL);",
+		);
+
+		conn.execute(create_accounts).await?;
+		info!("Ensured accounts schema exists");
+
+		Ok(())
 	}
 }
 

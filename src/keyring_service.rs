@@ -52,20 +52,26 @@ impl KeyringService {
 		Ok(())
 	}
 
-	pub async fn get_secret(&self, key: &str) -> Result<String, Box<dyn Error + Send + Sync>> {
+	pub async fn get_secret<F>(&self, key: F) -> Result<String, Box<dyn Error + Send + Sync>>
+	where
+		F: ToString, {
 		let service_name: String = self.service_name.clone();
 		let key: String = key.to_string();
 
-		spawn_blocking(move || match Entry::new(&service_name, &key) {
-			Ok(entry) => match entry.get_password() {
-				Ok(secret) => Ok(secret),
-				Err(e) => {
-					error!("Unable to get keyring variable: {:?}", e);
-					Ok("N/A".to_string())
+		spawn_blocking(move || {
+			match Entry::new(&service_name, &key) {
+				Ok(entry) => {
+					match entry.get_password() {
+						Ok(secret) => Ok(secret),
+						Err(e) => {
+							error!("Unable to get keyring variable: {:?}", e);
+							Ok("N/A".to_string())
+						}
+					}
 				}
-			},
-			Err(e) => {
-				panic!("Unable to connect to keyring: {:?}", e);
+				Err(e) => {
+					panic!("Unable to connect to keyring: {:?}", e);
+				}
 			}
 		})
 		.await?
@@ -89,9 +95,11 @@ impl KeyringService {
 		let service_name: String = self.service_name.clone();
 		let key: String = key.to_string();
 
-		spawn_blocking(move || match Entry::new(&service_name, &key) {
-			Ok(entry) => entry.get_password().is_ok(),
-			Err(_) => false,
+		spawn_blocking(move || {
+			match Entry::new(&service_name, &key) {
+				Ok(entry) => entry.get_password().is_ok(),
+				Err(_) => false,
+			}
 		})
 		.await
 		.unwrap_or(false)

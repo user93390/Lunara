@@ -15,18 +15,29 @@ limitations under the License.
 
 */
 
-use std::{error::Error, str::from_utf8};
-
-use log::{info, warn};
-use serde::{Deserialize, Serialize};
-use std::path::Path;
-
-use tokio::{
-	fs::File,
-	io::{AsyncReadExt, AsyncWriteExt},
+use std::{
+	error::Error,
+	str::from_utf8,
 };
 
-const CONF_LOCATION: &str = "config.toml";
+use log::{
+	info,
+	warn,
+};
+use serde::{
+	Deserialize,
+	Serialize,
+};
+use std::path::Path;
+
+use crate::CONFIG;
+use tokio::{
+	fs::File,
+	io::{
+		AsyncReadExt,
+		AsyncWriteExt,
+	},
+};
 
 #[derive(Deserialize, Serialize, Clone)]
 pub(crate) struct Config {
@@ -72,7 +83,7 @@ impl Config {
 	pub(crate) async fn get_from_toml(
 		&self,
 	) -> Result<Option<Config>, Box<dyn Error + Send + Sync>> {
-		let path: &Path = Path::new(CONF_LOCATION);
+		let path: &Path = Path::new(CONFIG);
 
 		let mut file: File = File::open(path).await?;
 
@@ -96,10 +107,10 @@ impl Config {
 	/// Path doesn't exist or Path IS a folder
 	/// Returns true if successful
 	pub(crate) async fn write_toml(&self) -> Result<bool, Box<dyn Error + Send + Sync>> {
-		let path: &Path = Path::new(CONF_LOCATION);
+		let path: &Path = Path::new(CONFIG);
 
 		if !path.exists() {
-			warn!("file doesn't exist: {}", CONF_LOCATION);
+			warn!("file doesn't exist: {}", CONFIG);
 			return Ok(false);
 		}
 

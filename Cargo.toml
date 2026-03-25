@@ -7,34 +7,52 @@ name = "Lunara"
 edition = "2024"
 rust-version = "1.91.0"
 description = "A modern way of making containerized, fully local Minecraft servers."
-keywords = ["Docker", "Minecraft", "Containerized", "Self-hosted"]
+keywords = ["Containerized", "Docker", "Minecraft", "Self-hosted"]
 
 [dependencies]
-sea-orm = { version = "1.1.19", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros"] }
-keyring = { version = "3.6.3", features = ["linux-native", "tokio", "crypto-rust"] }
-tokio = { version = "1.50.0", features = ["rt", "rt-multi-thread", "macros", "fs", "io-util", "process"] }
 axum = { version = "0.8.8", features = ["macros"] }
-serde = { version = "1.0.228", features = ["derive"] }
-
-uuid = { version = "1.22.0", features = ["v4", "serde"] }
-log = "0.4.29"
+axum-cookie = "0.2.4"
+axum-extra = { version = "0.12.5", features = ["query"] }
+base64 = "0.22.1"
 env_logger = "0.11.9"
 hex = "0.4.3"
-rand = "0.10.0"
-toml = "1.0.7"
-
-tower-http = { version = "0.6.8", features = ["cors", "fs"] }
-base64 = "0.22.1"
-reqwest = { version = "0.13.2", features = ["json"] }
-thiserror = "2.0.18"
-serde_json = "1.0.149"
-axum-cookie = "0.2.4"
 jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
+keyring = { version = "3.6.3", features = [
+  "crypto-rust",
+  "linux-native",
+  "tokio"
+] }
+log = "0.4.29"
+rand = "0.10.0"
+reqwest = { version = "0.13.2", features = ["json"] }
+sea-orm = { version = "1.1.19", features = [
+  "macros",
+  "runtime-tokio-rustls",
+  "sqlx-postgres"
+] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+thiserror = "2.0.18"
+tokio = { version = "1.50.0", features = [
+  "fs",
+  "io-util",
+  "macros",
+  "process",
+  "rt",
+  "rt-multi-thread"
+] }
 
-[profile.release]
-codegen-units = 1
-lto = true
-opt-level = "z"
+
+toml = "1.0.7"
+tower = {version = "0.5.3", features = ["limit"]}
+tower-http = { version = "0.6.8", features = ["cors", "fs", "trace"] }
+tracing = "0.1.44"
+uuid = { version = "1.22.0", features = ["serde", "v4"] }
 
 [dev-dependencies]
 tower = "0.5.3"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1

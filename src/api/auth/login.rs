@@ -14,13 +14,30 @@
  * limitations under the License.
  */
 
-use serde::{Deserialize, Serialize};
+use serde::{
+	Deserialize,
+	Serialize,
+};
 
 use super::AuthApi;
-use crate::entity::accounts::{Column, Entity};
-use axum::{body::Body, http::StatusCode, response::Response};
-use log::{info, warn};
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use crate::entity::accounts::{
+	Column,
+	Entity,
+};
+use axum::{
+	body::Body,
+	http::StatusCode,
+	response::Response,
+};
+use log::{
+	info,
+	warn,
+};
+use sea_orm::{
+	ColumnTrait,
+	EntityTrait,
+	QueryFilter,
+};
 use std::error::Error;
 use uuid::Uuid;
 
@@ -105,7 +122,10 @@ impl LoginStructBuilder {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use std::panic::{AssertUnwindSafe, catch_unwind};
+	use std::panic::{
+		AssertUnwindSafe,
+		catch_unwind,
+	};
 
 	#[test]
 	fn builder_creates_login_with_expected_values() {

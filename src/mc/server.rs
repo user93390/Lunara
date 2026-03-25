@@ -16,13 +16,27 @@ limitations under the License.
 */
 use crate::mc::plugin::Plugin;
 use log::info;
-use reqwest::{Client, Response};
-use serde::{Deserialize, Serialize};
-use std::error::Error;
-use std::fs::File;
-use std::io::Write;
-use tokio::fs::{create_dir_all, read_to_string, remove_dir_all};
-use tokio::process::Command;
+use reqwest::{
+	Client,
+	Response,
+};
+use serde::{
+	Deserialize,
+	Serialize,
+};
+use std::{
+	error::Error,
+	fs::File,
+	io::Write,
+};
+use tokio::{
+	fs::{
+		create_dir_all,
+		read_to_string,
+		remove_dir_all,
+	},
+	process::Command,
+};
 
 #[derive(Debug, Deserialize, Clone, Serialize, Eq, PartialEq)]
 pub enum ServerBrand {
