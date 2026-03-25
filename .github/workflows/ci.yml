@@ -22,7 +22,7 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-nextest,cargo-llvm-cov
-      - run: cargo llvm-cov nextest --all-features --workspace --lcov --output-path lcov.info --codecov --output-path codecov.json
+      - run: cargo llvm-cov nextest
       - uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

@@ -22,11 +22,10 @@ jobs:
 
       - name: Run Tests & Generate Reports
         run: |
-          cargo llvm-cov nextest --release --junit-path junit.xml --codecov --output-path codecov.json
-
+          cargo llvm-cov nextest --profile ci --config-file nextest.toml
       - name: Upload to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: codecov.json,junit.xml
+          files: target/nextest/ci/junit.xml
           fail_ci_if_error: true
