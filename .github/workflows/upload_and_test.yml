@@ -27,12 +27,13 @@ jobs:
           files: codecov.json
           fail_ci_if_error: true
 
-      - name: Run Tests and upload to Codecov
+      - name: Run Tests and Generate Coverage
         run: |
-          cargo llvm-cov nextest --profile ci --config-file nextest.toml
-      - name: Upload to Codecov
+          cargo llvm-cov nextest --profile ci --config-file nextest.toml --output-path=codecov.json
+
+      - name: Upload Coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: codecov.json
           fail_ci_if_error: true
-          report_type: test_results
