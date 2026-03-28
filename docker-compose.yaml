@@ -12,7 +12,7 @@ services:
 
   application:
     image: lunara
-    build: .
+    build: /backend
     ports:
       - "5000:5000"
     depends_on:

@@ -16,59 +16,35 @@
 
 use crate::{
 	database::Database,
-	entity::accounts::{
-		Column,
-		Entity,
-	},
+	entity::accounts::{Column, Entity},
 	keyring_service::KeyringService,
-	route::auth_route::{
-		SESSION_COOKIE_NAME,
-		validate_jwt,
-	},
+	route::auth_route::{SESSION_COOKIE_NAME, validate_jwt},
 };
+use axum_cookie::CookieManager;
+
 use axum::{
-	Json,
-	Router,
-	extract::{
-		Path,
-		Request,
-		State,
-	},
-	http::{
-		HeaderMap,
-		StatusCode,
-		header,
-	},
-	middleware::{
-		Next,
-		from_fn,
-	},
+	Json, Router,
+	extract::{Path, Request, State},
+	http::{HeaderMap, StatusCode, header},
+	middleware::{Next, from_fn},
 	response::Response,
 	routing::get,
 };
 use axum_cookie::CookieLayer;
-use sea_orm::{
-	ColumnTrait,
-	EntityTrait,
-	QueryFilter,
-};
-use std::{
-	collections::HashMap,
-	sync::Arc,
-};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use std::{collections::HashMap, sync::Arc};
 use tower::limit::ConcurrencyLimitLayer;
 use uuid::Uuid;
 
 use log::warn;
-use tower_http::trace::{
-	DefaultMakeSpan,
-	TraceLayer,
-};
+use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing::Level;
+
 fn api_router() -> Router<Arc<Database>> {
 	Router::new()
 		.route("/users", get(users))
 		.route("/users/search/{uuid}", get(search_user))
+		.route("/users/me", get(current_user))
 		.route_layer(from_fn(auth))
 }
 
@@ -93,15 +69,13 @@ async fn authorize(headers: &HeaderMap) -> bool {
 		.get(header::COOKIE)
 		.and_then(|value| value.to_str().ok());
 
-	let Some(cookie_header) = cookie_header
-	else {
+	let Some(cookie_header) = cookie_header else {
 		return false;
 	};
 
 	for raw_cookie in cookie_header.split(';') {
 		let mut parts = raw_cookie.trim().splitn(2, '=');
-		let Some(name) = parts.next()
-		else {
+		let Some(name) = parts.next() else {
 			continue;
 		};
 
@@ -130,6 +104,21 @@ async fn authorize(headers: &HeaderMap) -> bool {
 	}
 
 	false
+}
+
+#[axum::debug_handler]
+async fn current_user(manager: CookieManager) -> String {
+	let token = manager.get(SESSION_COOKIE_NAME).unwrap();
+	let key = KeyringService::new("lunara")
+		.get_secret("key")
+		.await
+		.unwrap()
+		.into_bytes();
+
+	match validate_jwt(&key, token.value()) {
+		Ok(value) => value.uuid.to_string(),
+		Err(err) => err.to_string(),
+	}
 }
 
 #[axum::debug_handler]
@@ -175,11 +164,7 @@ mod tests {
 	use super::*;
 	use axum::{
 		body::Body,
-		http::{
-			Request,
-			StatusCode,
-			header,
-		},
+		http::{Request, StatusCode, header},
 		response::Response,
 	};
 	use tower::ServiceExt;

@@ -25,36 +25,20 @@ pub(crate) mod keyring_service;
 mod mc;
 mod route;
 use axum::Router;
-use std::{
-	collections::HashMap,
-	error::Error,
-	path::Path,
-};
+use std::{collections::HashMap, error::Error, path::Path};
 
 use crate::{
 	config::Config,
 	database::Database,
-	route::{
-		api_route,
-		auth_route,
-	},
+	route::{api_route, auth_route},
 };
 
-use log::{
-	LevelFilter,
-	debug,
-	error,
-	info,
-	warn,
-};
+use log::{LevelFilter, debug, error, info, warn};
 
 use crate::route::mc_route::mc_route;
 use axum::routing::get;
 use keyring_service::KeyringService;
-use tokio::{
-	fs::File,
-	net::TcpListener,
-};
+use tokio::{fs::File, net::TcpListener};
 
 // Postgres
 const POSTGRES_PORT_DEF: &str = "5432";
@@ -63,7 +47,7 @@ const POSTGRES_NAME_DEF: &str = "postgres";
 const POSTGRES_USER_DEF: &str = "postgres";
 const POSTGRES_PASSWORD_DEF: &str = "postgres";
 
-// Route naming.
+// Routes
 const HEALTH_ROUTE: &str = "/health";
 const MC_ROUTE_PREFIX: &str = "/mc";
 const AUTH_ROUTE_PREFIX: &str = "/auth/v1";
@@ -262,10 +246,9 @@ fn health_route(app: Router, db_available: bool) -> Router {
 
 fn db_route_optional(app: Router, db_routes: Option<Routes>) -> Router {
 	match db_routes {
-		Some((auth_routes, api_routes)) => {
-			app.nest(AUTH_ROUTE_PREFIX, auth_routes)
-				.nest(API_ROUTE_PREFIX, api_routes)
-		}
+		Some((auth_routes, api_routes)) => app
+			.nest(AUTH_ROUTE_PREFIX, auth_routes)
+			.nest(API_ROUTE_PREFIX, api_routes),
 		None => app,
 	}
 }

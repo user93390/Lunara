@@ -6,7 +6,7 @@ COPY init.sql /docker-entrypoint-initdb.d/init.sql
 
 ENV CI=true
 
-COPY . .
+COPY backend/ .
 
 # Build runtime binary
 RUN cargo build --release
